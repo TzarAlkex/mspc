@@ -1,0 +1,32 @@
+0.0.0.16
+*Added User adjustable Timeout to connection attempts
+0.0.0.15
+*Fixed console spam
+*Spelling (never = newer)
+*Faster scanning
+*Bigger and centralized font for tray icon
+0.0.0.14
+*Better error handling
+*Adds support for old MP protocol (1.3ish and older) (suggested by Tycooner)
+0.0.0.13
+*Fixed up update notification
+0.0.0.12
+*Slightly smaller server bar
+*Recently added servers were scanned even though they were not checked
+0.0.0.11
+*ListView colors can be enabled/disabled live
+*Scanning interval is now defined in seconds instead of minutes
+*Added button for manual scanning
+*Limited GUI resizing
+*Empty servers colored yellow (suggested by Tycooner)
+*Added server bar (suggested by Tycooner)
+0.0.0.10
+*Really fixed update check
+0.0.0.9
+*Fixed update check
+0.0.0.8
+*Better update checking
+0.0.0.7
+*Implemented checkboxes for listview items
+*Can click anywhere in listview to select line
+*Optional colors in listview depending on success/fail
