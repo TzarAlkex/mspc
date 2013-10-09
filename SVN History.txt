@@ -1,0 +1,69 @@
+The old repository got corrupted, here's what survived from the "offline" view in TortoiseSVN.
+
+
+
+
+
+Revision: 151
+Author: Admiral
+Date: den 23 juni 2013 00:34:15
+Message:
+Added: ReadMe
+----
+Added : /Minecraft Server Periodic Checker/trunk/ReadMe.txt
+
+Revision: 150
+Author: Admiral
+Date: den 23 juni 2013 00:34:02
+Message:
+Added: Bigger and centralized font for tray icon
+----
+Modified : /Minecraft Server Periodic Checker/trunk/ToDo.txt
+
+Revision: 149
+Author: Admiral
+Date: den 23 juni 2013 00:33:47
+Message:
+Added: Bigger and centralized font for tray icon
+----
+Modified : /Minecraft Server Periodic Checker/trunk/Changelog.txt
+Modified : /Minecraft Server Periodic Checker/trunk/Minecraft Server Periodic Checker.au3
+
+Revision: 148
+Author: Admiral
+Date: den 22 juni 2013 20:31:41
+Message:
+Chenged: Server bar instead of server popup
+----
+Modified : /Minecraft Server Periodic Checker/trunk/Changelog.txt
+
+Revision: 147
+Author: Admiral
+Date: den 22 juni 2013 20:29:08
+Message:
+Added: Note in changelog that scanning is faster
+----
+Modified : /Minecraft Server Periodic Checker/trunk/Changelog.txt
+
+Revision: 146
+Author: Admiral
+Date: den 22 juni 2013 20:26:36
+Message:
+Fixed: console spam
+Fixed: Spelling (never = newer)
+----
+Modified : /Minecraft Server Periodic Checker/trunk/ToDo.txt
+Modified : /Minecraft Server Periodic Checker/trunk/Changelog.txt
+Modified : /Minecraft Server Periodic Checker/trunk/Minecraft Server Periodic Checker.au3
+
+Revision: 145
+Author: Admiral
+Date: den 31 januari 2013 13:33:59
+Message:
+Added: Support for old MP protocol (pre 1.3ish)
+Added: Better error handling
+----
+Modified : /Minecraft Server Periodic Checker/trunk/ToDo.txt
+Modified : /Minecraft Server Periodic Checker/trunk/Changelog.txt
+Modified : /Minecraft Server Periodic Checker/trunk/Minecraft Server Periodic Checker.au3
+
