@@ -203,7 +203,7 @@ $idPopupDummy = GUICtrlCreateDummy()
 
 GUICtrlCreateGroup("More info", 645, 5, 177, $iGuiY - 15)
 
-$idServerImage = GUICtrlCreatePic(@ScriptDir & "\Emma Watson.jpg", 655, 25, 64, 64)
+$idServerImage = GUICtrlCreatePic(@ScriptDir & "\Svartnos.jpg", 655, 25, 64, 64)
 
 $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 655, 95, $iGuiX - 670, 25, $SS_CENTERIMAGE)
 
@@ -672,7 +672,7 @@ Func _ServerInfoShow($iIndex)
 		_SetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")
 		$iFlag = True
 	Else
-		GUICtrlSetImage($idServerImage, @ScriptDir & "\Emma Watson.jpg")
+		GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
 	EndIf
 
 	For $iX = 0 To UBound($asServerPlayers) -1
