@@ -1,3 +1,8 @@
+0.0.0.17
+*Always show player numbers
+*Added support for domain names
+*Added experimental support for new 1.7+ protocol
+*Added server icon (only for 1.7+ protocol) and player list (only for 1.7+ protocol) (must be enabled in server)
 0.0.0.16
 *Added User adjustable Timeout to connection attempts
 0.0.0.15

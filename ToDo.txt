@@ -1,2 +1,3 @@
-*(MIGHT BE FIXED!!) Sometime the ScanNow button doesn't update it's text properly (but it still functions like it should).
+*(MIGHT BE FIXED) Sometime the ScanNow button doesn't update it's text properly (but it still functions like it should).
 *Rapidly (as in a few ms) closing multiple Server Bars makes $avPopups array crash.
+*Make GUI resizable
