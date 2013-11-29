@@ -124,6 +124,7 @@ $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
 
+_IniClean()
 $asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
 If Not @error Then
 	For $iX = 1 To $asServers[0]
@@ -381,6 +382,8 @@ Func _ServerScanner()
 	Local $iSocket
 	Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
 
+;~ 	_IniClean($oObj)
+
 	TCPStartup()
 
 	$iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
@@ -554,6 +557,30 @@ Func _ServerScanner()
 	$oObj.Finished()
 
 	Exit
+EndFunc
+
+Func _IniClean();_IniClean($oObj)
+	$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
+	If Not @error Then
+		For $iX = 1 To $asServers[0]
+			$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
+;~ 			$oObj.Log(@error)
+;~ 			ContinueLoop
+			If @error Then
+				IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX])
+				ContinueLoop
+			EndIf
+
+;~ 			$oObj.Log($asPorts[0][0])
+
+			IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
+
+;~ 			For $iY = 1 To $asPorts[0][0]
+;~ 				$oObj.Log($asPorts[$iY][0])
+;~ 				If $asPorts[$iY][0] = "" Then IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
+;~ 			Next
+		Next
+	EndIf
 EndFunc
 
 ;By Beege http://www.autoitscript.com/forum/topic/155546-base64-machine-code-functions-source/
