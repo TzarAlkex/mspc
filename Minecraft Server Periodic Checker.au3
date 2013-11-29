@@ -382,8 +382,6 @@ Func _ServerScanner()
 	Local $iSocket
 	Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
 
-;~ 	_IniClean($oObj)
-
 	TCPStartup()
 
 	$iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
@@ -407,21 +405,12 @@ Func _ServerScanner()
 				If $asPorts[$iY][1] = "Old" Then   ;pre 1.4 protocol
 					TCPSend($iSocket, Binary("0xFE"))
 				ElseIf $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
-;~ 					$bTemp = Binary("0x0E000408") & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01" & "0100"
-;~ 					$bTemp = Binary($asServers[$iX])
-;~ 					$bTemp = Hex($asPorts[$iY][0], 4)
 					$bTemp = Binary("0x0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01" & "0100"
-;~ 					$oObj.Log($bTemp)
-;~ 					$oObj.Log(BinaryLen($bTemp) -2)
 					$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
-;~ 					$oObj.Log($bTemp)
-;~ 					$oObj.Log(Binary("0x0E0004" & Hex(BinaryLen($asServers[$iX]), 2)))
 					$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01"   ;first byte (0x!0E!0004) should be total length
 					$bRequest = "0100"
-;~ 					$oObj.Log($bHandshake & $bRequest)
 					TCPSend($iSocket, $bTemp)
 				Else   ;1.4 - 1.7 protocol
-;~ 					$oObj.Log("via 1.4 - 1.7 protocol")
 					TCPSend($iSocket, Binary("0xFE01"))
 				EndIf
 
@@ -430,40 +419,21 @@ Func _ServerScanner()
 						Sleep(1500)
 						$dRet = TCPRecv($iSocket, 1500, 1)
 						If @error Then
-;~ 							$oObj.Log("@error? " & @error)
-;~ 							$oObj.Log("anything here? " & $dRet)
 							TCPCloseSocket($iSocket)
 							ExitLoop
 						EndIf
-;~ 						$oObj.Log("@error? " & @error)
-;~ 						$oObj.Log("anything here? " & $dRet)
-;~ 						$oObj.Log("pannkaka")
 
 						If $dRet <> "" Then
-;~ 							$oObj.Log($dRet)
 
 							If $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
-;~ 								$oObj.Log("Yippie!!")
 								$oObj.Log("Online (1.7+ protocol)")
-
-;~ 								$oObj.Log(TCPRecv($iSocket, 1500, 1))
-;~ 								$oObj.Log(TCPRecv($iSocket, 1500, 1))
-;~ 								$oObj.Log(TCPRecv($iSocket, 1500, 1))
-
-;~ 								TCPRecv($iSocket, 1500, 1)
-;~ 								$oObj.Log(Number(@error))
 
 								Do
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
 								$oObj.Log($dRet)
 
-;~ 								$oObj.Log(BinaryToString(Binary("0x" & StringTrimLeft($dRet, 8)), 3))
-;~ 								$oObj.Log(BinaryToString(BinaryMid($dRet, 4)))
-;~ 								$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
-;~ 								$oReturn = Jsmn_ObjGetKeys($oJSON)
-;~ 								_ArrayDisplay($oReturn)
 
 								$oVersion = Jsmn_ObjGet($oJSON, "version")
 								$sVersionName = Jsmn_ObjGet($oVersion, "name")
@@ -475,44 +445,16 @@ Func _ServerScanner()
 
 								$sDescription = Jsmn_ObjGet($oJSON, "description")
 
-
-;~ 								$oObj.Log(Jsmn_ObjExists($oPlayers, "sample"))
-
-;~ 								If $iPlayersOnline > 0 Then
 								If Jsmn_ObjExists($oPlayers, "sample") Then
 									$oSample = Jsmn_ObjGet($oPlayers, "sample")
-;~ 									$oObj.Log(IsArray($oSample))
-;~ 									$oObj.Log(Jsmn_IsObject($oSample[0]))
 									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
-;~ 									_ArrayDisplay($oSample)
-;~ 									$oObj.Log(VarGetType($oSample[0]) & "/" & ObjName($oSample[0]))
-;~ 									$oObj.Log(VarGetType($oSampleKeys[0]))
-;~ 									$aTemp = $oSampleKeys[0]
-;~ 									$oObj.Log($aTemp[2][1])
-;~ 									_ArrayDisplay($aTemp)
-;~ 									$oObj.Log(UBound($oSample))
-;~ 									For $iZ = 0 To UBound($oSample) -1
-;~ 										$oObj.Log($iZ)
-;~ 										$oArray = Jsmn_ObjGet($oSample[$iZ], $iZ)
-;~ 										$oObj.Log(@error & "/" & VarGetType($oArray) & "/" & $oArray)
-;~ 									Next
 									For $iZ = 0 To UBound($oSampleKeys) -1
-;~ 										$oObj.Log($iZ)
 										$aPlayer = $oSampleKeys[0]
-;~ 										$oObj.Log($aPlayer[2][1])
 										$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[2][1], $aPlayer[1][1])
 									Next
-;~ 									$oObj.PlayerEnd()
 								EndIf
 
 								$SFavicon = Jsmn_ObjGet($oJSON, "favicon")
-;~ 								$oObj.Log($sFavicon)
-;~ 								$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
-;~ 								$oObj.Log(StringTrimLeft($SFavicon, StringInStr($sFavicon, ",")))
-;~ 								$sSource = StringTrimLeft($SFavicon, StringInStr($sFavicon, ","))
-;~ 								$sSource = StringStripWS($sSource, $STR_STRIPALL)
-;~ 								$oObj.Log($sSource)
-;~ 								$oObj.Log(_B64Decode($sSource))
 
 								$hPNG = FileOpen(@ScriptDir & "\TemporaryFiles\" & $asServers[$iX] & " " & $asPorts[$iY][0] & ".png", 2+8+16)
 								FileWrite($hPNG, _B64Decode(StringStripWS(StringTrimLeft($SFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL)))
@@ -564,21 +506,12 @@ Func _IniClean();_IniClean($oObj)
 	If Not @error Then
 		For $iX = 1 To $asServers[0]
 			$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
-;~ 			$oObj.Log(@error)
-;~ 			ContinueLoop
 			If @error Then
 				IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX])
 				ContinueLoop
 			EndIf
 
-;~ 			$oObj.Log($asPorts[0][0])
-
 			IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
-
-;~ 			For $iY = 1 To $asPorts[0][0]
-;~ 				$oObj.Log($asPorts[$iY][0])
-;~ 				If $asPorts[$iY][0] = "" Then IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
-;~ 			Next
 		Next
 	EndIf
 EndFunc
@@ -625,7 +558,6 @@ Func _SomeObject()
     Local $oClassObject = _AutoItObject_Class()
     $oClassObject.AddMethod("Log", "_ServerLog")
     $oClassObject.AddMethod("Player", "_ServerPlayer")
-;~     $oClassObject.AddMethod("PlayerEnd", "_ServerPlayerEnd")
     $oClassObject.AddMethod("Results", "_ServerResults")
     $oClassObject.AddMethod("Finished", "_ServerFinished")
     Return $oClassObject.Object
@@ -638,22 +570,12 @@ EndFunc
 Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $sPlayer, $nId)
 	ConsoleWrite("_ServerPlayer: " & $sPlayer & "/" & $nId & @LF)
 
-;~ 	ConsoleWrite(UBound($asServerPlayers) & @LF)
-;~ 	_ArrayDisplay($asServerPlayers)
 	Local $iUBound = UBound($asServerPlayers)
 	ReDim $asServerPlayers[$iUBound +1][3]
 	$asServerPlayers[$iUBound][0] = $sServerAddress & ":" & $iServerPort
-;~ 	$asServerPlayers[$iUBound][1] = $iServerPort
 	$asServerPlayers[$iUBound][1] = $sPlayer
 	$asServerPlayers[$iUBound][2] = $nId
-;~ 	ConsoleWrite($asServerPlayers[1][2] & @LF)
-;~ 	_ArrayDisplay($asServerPlayers)
-;~ 	ConsoleWrite(UBound($asServerPlayers) & @LF)
 EndFunc
-
-;~ Func _ServerPlayerEnd($oSelf)
-;~ 	ConsoleWrite("_ServerPlayerEnd" & @LF)
-;~ EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
 	If $iProtocol <> "" And $iProtocol <> "Error" Then ConsoleWrite("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD & @LF)
@@ -739,19 +661,14 @@ Func _ServerInfoShow($iIndex)
 	Local $iPort = _GUICtrlListView_GetItemText($idServers, $iIndex, 1)
 
 	If FileExists(@ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png") Then
-;~ 		ConsoleWrite(1 & @LF)
-;~ 		GUICtrlSetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")
 		_SetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")
 	Else
-;~ 		ConsoleWrite(2 & @LF)
 		GUICtrlSetImage($idServerImage, @ScriptDir & "\Emma Watson.jpg")
 	EndIf
 
 	For $iX = 0 To UBound($asServerPlayers) -1
 		If $asServerPlayers[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
 
-;~ 		ConsoleWrite($asServerPlayers[$iX][1] & @LF)
-;~ 		GUICtrlCreateListViewItem($asServerPlayers[$iX][1], $idServerPlayers)
 		_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][1], $iListNew)
 	Next
 	AdlibRegister("_DownloadPlayerImages")
@@ -760,19 +677,15 @@ EndFunc
 Func _DownloadPlayerImages()
 	AdlibUnRegister("_DownloadPlayerImages")
 	For $iX = 0 To _GUICtrlListView_GetItemCount($idServerPlayers) -1
-;~ 		ConsoleWrite(_GUICtrlListView_GetItemImage($idServerPlayers, $iX) & @LF)
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) <> 0 Then ContinueLoop
 
 		$sFileName = _GUICtrlListView_GetItemText($idServerPlayers, $iX) & ".png"
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & "HEAD.png"
-;~ 		ConsoleWrite($sFileName & @LF)
 
 		If FileExists($sFileNameHEAD) Then
-;~ 			ConsoleWrite(1 & @LF)
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			AdlibRegister("_DownloadPlayerImages")
 		Else
-;~ 			ConsoleWrite(2 & @LF)
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 			$avInet = InetGet("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName, @ScriptDir & "\TemporaryFiles\" & $sFileName)
 			If $avInet = 0 Then
@@ -994,7 +907,6 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 		Case $LVN_ITEMCHANGING
 			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 			$iIndex = DllStructGetData($tInfo, "Index")
-;~ 			ConsoleWrite("$LVN_ITEMCHANGING " & $iIndex & @LF)
 			$iState = _GUICtrlListView_GetItemChecked($idServers, $iIndex)
 
 			If $iListviewFlag Then
@@ -1004,7 +916,6 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 		Case $LVN_ITEMCHANGED
 			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 			$iIndex = DllStructGetData($tInfo, "Index")
-;~ 			ConsoleWrite("$LVN_ITEMCHANGED " & $iIndex & @LF)
 			If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
 				IniWrite(@ScriptDir & "\Servers.ini", _GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
 			EndIf
@@ -1015,33 +926,15 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					$iListviewIndex = -1
 				EndIf
 			EndIf
-		Case $LVN_HOTTRACK
-;~ 			$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
-;~ 			Local $iSubItem = DllStructGetData($tInfo, "SubItem")
-;~ 			Local $HotItem = _GUICtrlListView_GetHotItem($idServers)
-;~ 			ConsoleWrite($HotItem & "/" & $iSubItem & @LF)
-
-;~ 			_ServerInfoShow()
-		Case $LVN_ITEMACTIVATE
-;~ 			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;~ 			$iIndex = DllStructGetData($tInfo, "Index")
-;~ 			ConsoleWrite("$LVN_ITEMACTIVATE " & $iIndex & @LF)
 		Case $LVN_KEYDOWN
-;~ 			$tInfo = DllStructCreate($tagNMLVKEYDOWN, $ilParam)
-;~ 			ConsoleWrite("$LVN_KEYDOWN " & $iIndex & @LF)
-;~ 			$sIndices = _GUICtrlListView_GetSelectedIndices($idServers, False)
-;~ 			ConsoleWrite($sIndices & @LF)
-;~ 			_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
 			$iListviewFlag = True
 		Case $NM_CLICK
 			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-;~ 			ConsoleWrite("$NM_CLICK " & $iIndex & @LF)
 			$aiHit = _GUICtrlListView_HitTest(GUICtrlGetHandle($idServers))
-;~ 			_ArrayDisplay($aiHit)
 			If IsArray($aiHit) And $aiHit[3] = False Then Return $GUI_RUNDEFMSG
+
 			$iIndex = DllStructGetData($tInfo, "Index")
 			_ServerInfoShow($iIndex)
-;~ 			ConsoleWrite($iIndex & @LF)
 	EndSwitch
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_NOTIFY
