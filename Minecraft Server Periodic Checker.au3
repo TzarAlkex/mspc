@@ -91,7 +91,7 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 
 
-Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex
+Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False
 
 Local $iGuiX = 832, $iGuiY = 480
 
@@ -274,11 +274,13 @@ While 1
 		Case $idUpdateLabel
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $idPopupDummy
+			$iSkipLabelProc = True
 			$iCurrent = GUICtrlRead($idPopupDummy)
 			_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iCurrent][4]), $GWL_WNDPROC, $avPopups[$iCurrent][3])
 			DllCallbackFree($avPopups[$iCurrent][2])
 			GUIDelete($avPopups[$iCurrent][0])
 			_ArrayDelete($avPopups, $iCurrent)
+			$iSkipLabelProc = False
 	EndSwitch
 WEnd
 
@@ -331,10 +333,12 @@ Func _ServerPopupAdd($sServerAddress, $sPort, $iY)
 EndFunc
 
 Func _LabelProc($hWnd, $iMsg, $iwParam, $ilParam)
-	$iCurrent = 0
+	If $iSkipLabelProc Then Return 0
+
+	Local $iCurrent = 0
 	For $iX = 1 To UBound($avPopups) -1
 		If $hWnd = GUICtrlGetHandle($avPopups[$iX][4]) Then
-			$iCurrent = $iX
+			$iCurrent = $iX   ;$iCurrent is not used anywhere after this, remove?
 			ExitLoop
 		EndIf
 	Next
