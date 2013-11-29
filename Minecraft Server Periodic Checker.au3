@@ -40,6 +40,7 @@
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
+Opt("GUIResizeMode", $GUI_DOCKALL)
 
 Global $sMyCLSID = "AutoIt.ServerChecker"
 
@@ -94,7 +95,7 @@ Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734
 
 Local $iGuiX = 832, $iGuiY = 480
 
-$hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX, $WS_MAXIMIZEBOX))
+$hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
 
 Local $aiGuiMin = WinGetPos($hGui)
 
@@ -194,6 +195,11 @@ If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(246) & "ttbullarIsTast
 	AdlibRegister("_CheckForUpdate", 100)
 EndIf
 
+GUICtrlCreateLabel("Tip 1: Check items to include in scan", 5, $iGuiY - 30, 200, 25)
+GUICtrlCreateLabel("Tip 2: Rightclick item to delete and stuff", 435, $iGuiY - 30, 200, 25, $SS_RIGHT)
+
+$idPopupDummy = GUICtrlCreateDummy()
+
 
 GUICtrlCreateGroup("More info", 645, 5, 177, $iGuiY - 15)
 
@@ -209,10 +215,7 @@ _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
 
 
-GUICtrlCreateLabel("Tip 1: Check items to include in scan", 5, $iGuiY - 30, 200, 25)
-GUICtrlCreateLabel("Tip 2: Rightclick item to delete and stuff", 435, $iGuiY - 30, 200, 25, $SS_RIGHT)
-
-$idPopupDummy = GUICtrlCreateDummy()
+WinMove($hGui, "", $aiGuiMin[0], $aiGuiMin[1], $aiGuiMin[2] -187, $aiGuiMin[3])
 
 GUISetState()
 GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
@@ -655,6 +658,7 @@ EndFunc
 
 #region
 Func _ServerInfoShow($iIndex)
+	Local $iFlag = False
 	_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($idServerPlayers))
 
 	Local $sServer = _GUICtrlListView_GetItemText($idServers, $iIndex)
@@ -662,6 +666,7 @@ Func _ServerInfoShow($iIndex)
 
 	If FileExists(@ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png") Then
 		_SetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")
+		$iFlag = True
 	Else
 		GUICtrlSetImage($idServerImage, @ScriptDir & "\Emma Watson.jpg")
 	EndIf
@@ -670,7 +675,15 @@ Func _ServerInfoShow($iIndex)
 		If $asServerPlayers[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
 
 		_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][1], $iListNew)
+		$iFlag = True
 	Next
+	If $iFlag Then
+		Local $aiGui = WinGetPos($hGui)
+		WinMove($hGui, "", $aiGui[0], $aiGui[1], $aiGuiMin[2], $aiGuiMin[3])
+	Else
+		Local $aiGui = WinGetPos($hGui)
+		WinMove($hGui, "", $aiGui[0], $aiGui[1], $aiGuiMin[2] -187, $aiGuiMin[3])
+	EndIf
 	AdlibRegister("_DownloadPlayerImages")
 EndFunc
 
