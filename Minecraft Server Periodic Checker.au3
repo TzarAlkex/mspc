@@ -37,6 +37,7 @@
 #include "JSMN.au3"
 #include <GuiImageList.au3>
 #include "Icons.au3"
+#include <Date.au3>
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -438,7 +439,7 @@ Func _ServerScanner()
 								Do
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
-								$oObj.Log($dRet)
+;~ 								$oObj.Log($dRet)
 
 								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 
@@ -700,6 +701,13 @@ Func _DownloadPlayerImages()
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & "HEAD.png"
 
 		If FileExists($sFileNameHEAD) Then
+;~ 			$aiTime = FileGetTime($sFileNameHEAD)
+;~ 			$iDateCalc = _DateDiff("D", $aiTime[0] & "/" & $aiTime[1] & "/" & $aiTime[2], _NowCalc())
+;~ 			If $iDateCalc > 3 Then
+;~ 				FileDelete($sFileNameHEAD)
+;~ 				AdlibRegister("_DownloadPlayerImages")
+;~ 				Return
+;~ 			EndIf
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			AdlibRegister("_DownloadPlayerImages")
 		Else
