@@ -673,8 +673,8 @@ Func _ServerInfoShow($iIndex)
 	Local $iFlag = False
 	_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($idServerPlayers))
 
-	Local $sServer = _GUICtrlListView_GetItemText($idServers, $iIndex)
-	Local $iPort = _GUICtrlListView_GetItemText($idServers, $iIndex, 1)
+	Local $sServer = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex)
+	Local $iPort = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex, 1)
 
 	If FileExists(@ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png") Then
 		_SetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")

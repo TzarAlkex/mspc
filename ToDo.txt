@@ -2,3 +2,4 @@
 *Make GUI resizable (?)
 *Investigate if using http://www.autoitscript.com/forum/topic/90545-filefindex/ would speed things up
 *Don't store server icons, only keep them in RAM?
+*Find out why _GUICtrlListView_GetItemText() doesn't work as expected in rev. 24 and report to maintainers
