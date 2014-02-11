@@ -233,6 +233,7 @@ Global $hObj = _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItP
 
 _AvatarsDelete()
 AdlibRegister("_ServerCheck")
+_UpdateSpecs()
 
 While 1
 	Switch GUIGetMsg()
@@ -287,7 +288,7 @@ While 1
 			_ArrayDelete($avPopups, $iCurrent)
 			$iSkipLabelProc = False
 		Case $idDeleteAvatars
-			_AvatarsDelete()
+			_AvatarsDeleteALL()
 			_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
 	EndSwitch
 WEnd
@@ -468,7 +469,7 @@ Func _ServerScanner()
 									$oSample = Jsmn_ObjGet($oPlayers, "sample")
 									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
 									For $iZ = 0 To UBound($oSampleKeys) -1
-										$aPlayer = $oSampleKeys[0]
+										$aPlayer = $oSampleKeys[$iZ]
 										$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[2][1], $aPlayer[1][1])
 									Next
 								EndIf
@@ -767,7 +768,7 @@ Func _DownloadPlayerImages()
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) <> 0 Then ContinueLoop
 
 		$sFileName = _GUICtrlListView_GetItemText($idServerPlayers, $iX) & ".png"
-		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & "HEAD.png"
+		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & ".png"
 
 		If FileExists($sFileNameHEAD) Then
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
@@ -820,9 +821,13 @@ Func _ImageList_AddImage($hImageList, $sFile)
 	Return $iIndex
 EndFunc
 
+Func _AvatarsDeleteALL()
+	FileDelete(@ScriptDir & "\TemporaryFiles\*.png")
+EndFunc
+
 Func _AvatarsDelete()
 	Local $sTempFolder = @ScriptDir & "\TemporaryFiles\"
-	Local $hSearch = FileFindFirstFile($sTempFolder & "*HEAD.png")
+	Local $hSearch = FileFindFirstFile($sTempFolder & "*.png")
 	If $hSearch = -1 Then Return
 
 	Local $sFileName, $sStartDate, $sEndDate = _NowCalc()
@@ -1105,6 +1110,9 @@ Func _WM_GETMINMAXINFO($hwnd, $Msg, $wParam, $lParam)
     DllStructSetData($tagMaxinfo, 8, $aiGuiMin[3]) ; min Y
     Return 0
 EndFunc   ;==>WM_GETMINMAXINFO
+
+Func _UpdateSpecs()
+EndFunc
 
 Func _CheckForUpdate()
 	Local $asInfo = InetGetInfo($aInet)
