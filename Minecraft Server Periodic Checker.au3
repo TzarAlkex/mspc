@@ -206,14 +206,17 @@ GUICtrlCreateGroup("More info", 645, 5, 177, $iGuiY - 15)
 
 $idServerImage = GUICtrlCreatePic(@ScriptDir & "\Svartnos.jpg", 655, 25, 64, 64)
 
-$idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 655, 95, $iGuiX - 670, 25, $SS_CENTERIMAGE)
+$idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
+GUICtrlSetState(-1, $GUI_HIDE)
 
-$idServerPlayers = GUICtrlCreateListView("Name", 655, 125, $iGuiX - 675, $iGuiY - 145, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+$idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
 Local $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
+
+$idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
 
 
 WinMove($hGui, "", $aiGuiMin[0], $aiGuiMin[1], $aiGuiMin[2] -187, $aiGuiMin[3])
@@ -228,6 +231,7 @@ _AutoItObject_StartUp()
 Global $oObject = _SomeObject()
 Global $hObj = _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItPID)
 
+_AvatarsDelete()
 AdlibRegister("_ServerCheck")
 
 While 1
@@ -282,6 +286,9 @@ While 1
 			GUIDelete($avPopups[$iCurrent][0])
 			_ArrayDelete($avPopups, $iCurrent)
 			$iSkipLabelProc = False
+		Case $idDeleteAvatars
+			_AvatarsDelete()
+			_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
 	EndSwitch
 WEnd
 
@@ -655,7 +662,7 @@ Func _ServerFinished($oSelf)
 	AdlibUnRegister("_WorkingAnimation")
 	$iServerTray = $iServerCount
 	$iServerCount = 0
-	_TraySet($iServerTray)
+	If _GUICtrlButton_GetCheck($idCountTray) = $BST_CHECKED Then _TraySet($iServerTray)
 	AdlibRegister("_ServerCheck", GUICtrlRead($idSeconds) * 1000)
 	GUICtrlSetData($idScanNow, "Scan now")
 	GUICtrlSetState($idScanNow, $GUI_ENABLE)
@@ -756,6 +763,29 @@ Func _ImageList_AddImage($hImageList, $sFile)
 	_WinAPI_DeleteObject($gc_PNG)
 	_GDIPlus_BitmapDispose($hBitmap)
 	Return $iIndex
+EndFunc
+
+Func _AvatarsDelete()
+	Local $sTempFolder = @ScriptDir & "\TemporaryFiles\"
+	Local $hSearch = FileFindFirstFile($sTempFolder & "*HEAD.png")
+	If $hSearch = -1 Then Return
+
+	Local $sFileName, $sStartDate, $sEndDate = _NowCalc()
+
+	While 1
+		$sFileName = FileFindNextFile($hSearch)
+		If @error Then ExitLoop
+		If @extended Then ContinueLoop
+
+		$asStartDate = FileGetTime($sTempFolder & $sFileName)
+		If @error Then ContinueLoop
+		$iDateCalc = _DateDiff("D", $asStartDate[0] & "/" & $asStartDate[1] & "/" & $asStartDate[2], $sEndDate)
+		If @error Then ContinueLoop
+
+		If $iDateCalc >= 7 Then FileDelete($sTempFolder & $sFileName)
+	WEnd
+
+	FileClose($hSearch)
 EndFunc
 #endregion
 
@@ -978,7 +1008,7 @@ Func _WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
 		Case $hCountTray
 			Switch $nNotifyCode
 				Case $BN_CLICKED
-					If _GUICtrlButton_GetCheck($hCtrl) Then
+					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
 						Opt("TrayIconHide", 0)
 						_TraySet($iServerTray)
 					Else
@@ -988,7 +1018,7 @@ Func _WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
 		Case $hColorizeListview
 			Switch $nNotifyCode
 				Case $BN_CLICKED
-					If _GUICtrlButton_GetCheck($hCtrl) Then
+					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
 						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
 							If _GUICtrlListView_GetItemChecked($idServers, $iX) Then
 								If _GUICtrlListView_GetItemText($idServers, $iX, 2) <> "" Then

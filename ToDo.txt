@@ -1,2 +1,4 @@
 *(MIGHT BE FIXED) Sometime the ScanNow button doesn't update it's text properly (but it still functions like it should).
 *Make GUI resizable (?)
+*Investigate if using http://www.autoitscript.com/forum/topic/90545-filefindex/ would speed things up
+*Don't store server icons, only keep them in RAM?

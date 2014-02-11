@@ -6,6 +6,7 @@
 *Fixed crash in server bar deleting logic
 *Fixed default scan timer
 *Made MOTD column display better
+*Added Avatar cleanup PLUS some GUI fixes
 0.0.0.16
 *Added User adjustable Timeout to connection attempts
 0.0.0.15
