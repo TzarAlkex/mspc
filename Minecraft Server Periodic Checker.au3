@@ -92,7 +92,7 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 
 
-Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False
+Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2]
 
 Local $iGuiX = 832, $iGuiY = 480
 
@@ -362,12 +362,17 @@ Func _LabelProc($hWnd, $iMsg, $iwParam, $ilParam)
 EndFunc
 
 Func _ServerCheck()
-	Global $asServerPlayers[1][3]
+	For $iX = 0 To UBound($asServerInfo) -1
+		_WinAPI_DeleteObject($asServerInfo[0][1])
+	Next
+	Global $asServerPlayers[1][3], $asServerInfo[1][2]
+
 	AdlibUnRegister("_ScanningCrashedReset")
 	AdlibUnRegister("_ServerCheck")
 	GUICtrlSetData($idScanNow, "Scanning under way")
 	GUICtrlSetState($idScanNow, $GUI_DISABLE)
 	AdlibRegister("_WorkingAnimation")
+
 	If @Compiled Then
 		$iPid = Run(FileGetShortName(@AutoItExe) & " /ServerScanner " & @AutoItPID)
 	Else
@@ -446,7 +451,6 @@ Func _ServerScanner()
 								Do
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
-;~ 								$oObj.Log($dRet)
 
 								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 
@@ -469,11 +473,10 @@ Func _ServerScanner()
 									Next
 								EndIf
 
-								$SFavicon = Jsmn_ObjGet($oJSON, "favicon")
+								$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
 
-								$hPNG = FileOpen(@ScriptDir & "\TemporaryFiles\" & $asServers[$iX] & " " & $asPorts[$iY][0] & ".png", 2+8+16)
-								FileWrite($hPNG, _B64Decode(StringStripWS(StringTrimLeft($SFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL)))
-								FileClose($hPNG)
+								$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
+								$oObj.Icon($asServers[$iX], $asPorts[$iY][0], $dPng)
 
 								$oObj.Results($asServers[$iX], $asPorts[$iY][0], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
 								ExitLoop 2
@@ -569,10 +572,56 @@ Func _B64Decode($sSource)
 	Return BinaryMid(DllStructGetData($tOutput, 1), 1, $aRet[0])
 EndFunc   ;==>_B64Decode
 
+;======================================================================================
+; Function Name:        Load_BMP_From_Mem
+; Description:          Loads a image which is saved as a binary string and converts it to a bitmap or hbitmap
+;
+; Parameters:           $mem_image:     the binary string which contains any valid image which is supported by GDI+
+;
+; Remark:                   hbitmap format is used generally for GUI internal images
+;
+; Requirement(s):       GDIPlus.au3, Memory.au3
+; Return Value(s):  Success: handle to bitmap or hbitmap, Error: 0
+; Error codes:          1: $mem_image is not a binary string
+;
+; Author(s):                UEZ
+; Modified:             AdmiralAlkex
+; Additional Code:  thanks to progandy for the MemGlobalAlloc and tVARIANT lines
+; Version:                  v0.95 Build 2011-06-11 Beta
+;=======================================================================================
+Func Load_BMP_From_Mem($mem_image)
+	If Not IsBinary($mem_image) Then Return SetError(1, 0, 0)
+
+	Local Const $memBitmap = Binary($mem_image) ;load image  saved in variable (memory) and convert it to binary
+	Local Const $len = BinaryLen($memBitmap) ;get length of image
+	Local Const $hData = _MemGlobalAlloc($len, $GMEM_MOVEABLE) ;allocates movable memory  ($GMEM_MOVEABLE = 0x0002)
+	Local Const $pData = _MemGlobalLock($hData) ;translate the handle into a pointer
+
+	Local $tMem = DllStructCreate("byte[" & $len & "]", $pData) ;create struct
+	DllStructSetData($tMem, 1, $memBitmap) ;fill struct with image data
+	_MemGlobalUnlock($hData) ;decrements the lock count  associated with a memory object that was allocated with GMEM_MOVEABLE
+
+	Local $hStream = DllCall("ole32.dll", "int", "CreateStreamOnHGlobal", "handle", $pData, "int", True, "ptr*", 0)
+	$hStream = $hStream[3]
+	Local $hBitmap = DllCall($ghGDIPDll, "uint", "GdipCreateBitmapFromStream", "ptr", $hStream, "int*", 0) ;Creates a Bitmap object based on an IStream COM interface
+	$hBitmap = $hBitmap[2]
+
+	Local Const $tVARIANT = DllStructCreate("word vt;word r1;word r2;word r3;ptr data; ptr")
+	DllCall("oleaut32.dll", "long", "DispCallFunc", "ptr", $hStream, "dword", 8 + 8 * @AutoItX64, _
+			"dword", 4, "dword", 23, "dword", 0, "ptr", 0, "ptr", 0, "ptr", DllStructGetPtr($tVARIANT)) ;release memory from $hStream to avoid memory leak
+	$tMem = 0
+
+	Local Const $hHBmp = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBitmap)
+	_GDIPlus_BitmapDispose($hBitmap)
+
+	Return $hHBmp
+EndFunc   ;==>Load_BMP_From_Mem
+
 Func _SomeObject()
     Local $oClassObject = _AutoItObject_Class()
     $oClassObject.AddMethod("Log", "_ServerLog")
     $oClassObject.AddMethod("Player", "_ServerPlayer")
+	$oClassObject.AddMethod("Icon", "_ServerIcon")
     $oClassObject.AddMethod("Results", "_ServerResults")
     $oClassObject.AddMethod("Finished", "_ServerFinished")
     Return $oClassObject.Object
@@ -590,6 +639,15 @@ Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $sPlayer, $nId)
 	$asServerPlayers[$iUBound][0] = $sServerAddress & ":" & $iServerPort
 	$asServerPlayers[$iUBound][1] = $sPlayer
 	$asServerPlayers[$iUBound][2] = $nId
+EndFunc
+
+Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
+	ConsoleWrite("_ServerIcon: " & BinaryLen($dIcon) & @LF)
+
+	Local $iUBound = UBound($asServerInfo)
+	ReDim $asServerInfo[$iUBound +1][2]
+	$asServerInfo[$iUBound][0] = $sServerAddress & ":" & $iServerPort
+	$asServerInfo[$iUBound][1] = Load_BMP_From_Mem($dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
@@ -676,10 +734,14 @@ Func _ServerInfoShow($iIndex)
 	Local $sServer = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex)
 	Local $iPort = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex, 1)
 
-	If FileExists(@ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png") Then
-		_SetImage($idServerImage, @ScriptDir & "\TemporaryFiles\" & $sServer & " " & $iPort & ".png")
+	For $iX = 1 To UBound($asServerInfo) -1
+		If $asServerInfo[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
+
 		$iFlag = True
-	Else
+		_SetHImage($idServerImage, $asServerInfo[$iX][1])
+		ExitLoop
+	Next
+	If $iFlag = False Then
 		GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
 	EndIf
 
@@ -708,13 +770,6 @@ Func _DownloadPlayerImages()
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & "HEAD.png"
 
 		If FileExists($sFileNameHEAD) Then
-;~ 			$aiTime = FileGetTime($sFileNameHEAD)
-;~ 			$iDateCalc = _DateDiff("D", $aiTime[0] & "/" & $aiTime[1] & "/" & $aiTime[2], _NowCalc())
-;~ 			If $iDateCalc > 3 Then
-;~ 				FileDelete($sFileNameHEAD)
-;~ 				AdlibRegister("_DownloadPlayerImages")
-;~ 				Return
-;~ 			EndIf
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			AdlibRegister("_DownloadPlayerImages")
 		Else
