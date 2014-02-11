@@ -615,7 +615,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 				EndIf
 				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTD, 4)
 
-				_GUICtrlListView_SetColumnWidth($idServers, 4, $LVSCW_AUTOSIZE)
+				_GUICtrlListView_SetColumnWidth($idServers, 4, $LVSCW_AUTOSIZE_USEHEADER)
 
 				ExitLoop
 			Else

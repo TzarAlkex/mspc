@@ -5,6 +5,7 @@
 *Added server icon (only for 1.7+ protocol) and player list (only for 1.7+ protocol) (must be enabled in server)
 *Fixed crash in server bar deleting logic
 *Fixed default scan timer
+*Made MOTD column display better
 0.0.0.16
 *Added User adjustable Timeout to connection attempts
 0.0.0.15
