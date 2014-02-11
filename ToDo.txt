@@ -1,5 +1,5 @@
 *(MIGHT BE FIXED) Sometime the ScanNow button doesn't update it's text properly (but it still functions like it should).
 *Make GUI resizable (?)
-*Investigate if using http://www.autoitscript.com/forum/topic/90545-filefindex/ would speed things up
+*Investigate for possible future usage http://www.autoitscript.com/forum/index.php?showtopic=90545 AND http://www.autoitscript.com/forum/index.php?showtopic=135625
 *Don't store server icons, only keep them in RAM?
 *Find out why _GUICtrlListView_GetItemText() doesn't work as expected in rev. 24 and report to maintainers
