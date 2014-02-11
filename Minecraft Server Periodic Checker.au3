@@ -164,7 +164,7 @@ If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
 	EndIf
 	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
 Else
-	GUICtrlSetData(-1, $sCombo, 1)
+	GUICtrlSetData(-1, $sCombo, 60)
 EndIf
 GUICtrlCreateLabel("(you can type your own value)", 240, $iGuiY - 95, 150, 20)
 
