@@ -38,6 +38,7 @@
 #include <GuiImageList.au3>
 #include "Icons.au3"
 #include <Date.au3>
+#include <InetConstants.au3>
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -735,11 +736,12 @@ Func _DownloadPlayerImages()
 			AdlibRegister("_DownloadPlayerImages")
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
-			$avInet = InetGet("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $sFileNameTEMP)
-			If $avInet = 0 Then
+
+			$dInet = InetRead("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $INET_FORCERELOAD)
+			If $dInet = "" Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
 			Else
-				$hImage = _GDIPlus_ImageLoadFromFile($sFileNameTEMP)
+				Local $hImage = _GDIPlus_ImageCreateFromMemory($dInet)
 
 				$hWnd = _WinAPI_GetDesktopWindow()
 				$hDC = _WinAPI_GetDC($hWnd)
@@ -758,15 +760,41 @@ Func _DownloadPlayerImages()
 				_GDIPlus_GraphicsDispose ($hGraphic)
 				_WinAPI_DeleteObject($hBMP)
 
-				FileDelete($sFileNameTEMP)
-
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			EndIf
+
 			AdlibRegister("_DownloadPlayerImages")
 		EndIf
 		ExitLoop
 	Next
 EndFunc
+
+;==================================================================================================================================
+; Author ........: AdmiralAlkex
+; Modified.......:
+;===================================================================================================================================
+Func _GDIPlus_ImageCreateFromMemory($bImage)
+	If Not IsBinary($bImage) Then Return SetError(1, 0, 0)
+	Local $aResult = 0
+	Local Const $memBitmap = Binary($bImage) ;load image saved in variable (memory) and convert it to binary
+	Local Const $iLen = BinaryLen($memBitmap) ;get binary length of the image
+	Local Const $GMEM_MOVEABLE = 0x0002
+	$aResult = DllCall("kernel32.dll", "handle", "GlobalAlloc", "uint", $GMEM_MOVEABLE, "ulong_ptr", $iLen) ;allocates movable memory ($GMEM_MOVEABLE = 0x0002)
+	If @error Then Return SetError(4, 0, 0)
+	Local Const $hData = $aResult[0]
+	$aResult = DllCall("kernel32.dll", "ptr", "GlobalLock", "handle", $hData)
+	If @error Then Return SetError(5, 0, 0)
+	Local $tMem = DllStructCreate("byte[" & $iLen & "]", $aResult[0]) ;create struct
+	DllStructSetData($tMem, 1, $memBitmap) ;fill struct with image data
+	DllCall("kernel32.dll", "bool", "GlobalUnlock", "handle", $hData) ;decrements the lock count associated with a memory object that was allocated with GMEM_MOVEABLE
+	If @error Then Return SetError(6, 0, 0)
+	Local Const $hStream = _WinAPI_CreateStreamOnHGlobal($hData) ;creates a stream object that uses an HGLOBAL memory handle to store the stream contents
+	If @error Then Return SetError(2, 0, 0)
+	Local Const $hImage = _GDIPlus_ImageLoadFromStream($hStream) ;creates a Bitmap object based on an IStream COM interface
+	If @error Then Return SetError(3, 0, 0)
+	DllCall("oleaut32.dll", "long", "DispCallFunc", "ptr", $hStream, "ulong_ptr", 8 * (1 + @AutoItX64), "uint", 4, "ushort", 23, "uint", 0, "ptr", 0, "ptr", 0, "str", "") ;release memory from $hStream to avoid memory leak
+	Return $hImage
+EndFunc   ;==>_GDIPlus_BitmapCreateFromMemory
 
 Func _ListView_AddImage($hListview, $sFile)
 	Return _ImageList_AddImage(_GUICtrlListView_GetImageList($hListview, 0), $sFile)
