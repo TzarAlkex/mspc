@@ -2,7 +2,7 @@
 *Always show player numbers
 *Added support for domain names
 *Added experimental support for new 1.7+ protocol
-*Added server icon (only for 1.7+ protocol) and player list (only for 1.7+ protocol) (must be enabled in server)
+*Added server icon (MC 1.7+) and player list (MC 1.7+) (both must be enabled in server)
 *Fixed crash in server bar deleting logic
 *Fixed default scan timer
 *Made MOTD column display better

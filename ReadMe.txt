@@ -19,5 +19,3 @@ monoceres, trancexx, Kip, Prog@ndy - http://www.autoitscript.com/forum/topic/110
 Ward - http://www.autoitscript.com/forum/topic/148114-jsmn-a-non-strict-json-udf/
 
 Yashied - http://www.autoitscript.com/forum/topic/92675-icons-udf/
-
-UEZ - http://www.autoitscript.com/forum/topic/148164-load-jpg-from-memory-and-set-it-to-ctrlcreatepic/?p=1052264

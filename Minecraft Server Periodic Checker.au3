@@ -573,51 +573,6 @@ Func _B64Decode($sSource)
 	Return BinaryMid(DllStructGetData($tOutput, 1), 1, $aRet[0])
 EndFunc   ;==>_B64Decode
 
-;======================================================================================
-; Function Name:        Load_BMP_From_Mem
-; Description:          Loads a image which is saved as a binary string and converts it to a bitmap or hbitmap
-;
-; Parameters:           $mem_image:     the binary string which contains any valid image which is supported by GDI+
-;
-; Remark:                   hbitmap format is used generally for GUI internal images
-;
-; Requirement(s):       GDIPlus.au3, Memory.au3
-; Return Value(s):  Success: handle to bitmap or hbitmap, Error: 0
-; Error codes:          1: $mem_image is not a binary string
-;
-; Author(s):                UEZ
-; Modified:             AdmiralAlkex
-; Additional Code:  thanks to progandy for the MemGlobalAlloc and tVARIANT lines
-; Version:                  v0.95 Build 2011-06-11 Beta
-;=======================================================================================
-Func Load_BMP_From_Mem($mem_image)
-	If Not IsBinary($mem_image) Then Return SetError(1, 0, 0)
-
-	Local Const $memBitmap = Binary($mem_image) ;load image  saved in variable (memory) and convert it to binary
-	Local Const $len = BinaryLen($memBitmap) ;get length of image
-	Local Const $hData = _MemGlobalAlloc($len, $GMEM_MOVEABLE) ;allocates movable memory  ($GMEM_MOVEABLE = 0x0002)
-	Local Const $pData = _MemGlobalLock($hData) ;translate the handle into a pointer
-
-	Local $tMem = DllStructCreate("byte[" & $len & "]", $pData) ;create struct
-	DllStructSetData($tMem, 1, $memBitmap) ;fill struct with image data
-	_MemGlobalUnlock($hData) ;decrements the lock count  associated with a memory object that was allocated with GMEM_MOVEABLE
-
-	Local $hStream = DllCall("ole32.dll", "int", "CreateStreamOnHGlobal", "handle", $pData, "int", True, "ptr*", 0)
-	$hStream = $hStream[3]
-	Local $hBitmap = DllCall($ghGDIPDll, "uint", "GdipCreateBitmapFromStream", "ptr", $hStream, "int*", 0) ;Creates a Bitmap object based on an IStream COM interface
-	$hBitmap = $hBitmap[2]
-
-	Local Const $tVARIANT = DllStructCreate("word vt;word r1;word r2;word r3;ptr data; ptr")
-	DllCall("oleaut32.dll", "long", "DispCallFunc", "ptr", $hStream, "dword", 8 + 8 * @AutoItX64, _
-			"dword", 4, "dword", 23, "dword", 0, "ptr", 0, "ptr", 0, "ptr", DllStructGetPtr($tVARIANT)) ;release memory from $hStream to avoid memory leak
-	$tMem = 0
-
-	Local Const $hHBmp = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBitmap)
-	_GDIPlus_BitmapDispose($hBitmap)
-
-	Return $hHBmp
-EndFunc   ;==>Load_BMP_From_Mem
-
 Func _SomeObject()
     Local $oClassObject = _AutoItObject_Class()
     $oClassObject.AddMethod("Log", "_ServerLog")
@@ -645,10 +600,14 @@ EndFunc
 Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 	ConsoleWrite("_ServerIcon: " & BinaryLen($dIcon) & @LF)
 
+	Local $hBitmap = _GDIPlus_BitmapCreateFromMemory($dIcon)
+	Local $hHBmp = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBitmap)
+	_GDIPlus_BitmapDispose($hBitmap)
+
 	Local $iUBound = UBound($asServerInfo)
 	ReDim $asServerInfo[$iUBound +1][2]
 	$asServerInfo[$iUBound][0] = $sServerAddress & ":" & $iServerPort
-	$asServerInfo[$iUBound][1] = Load_BMP_From_Mem($dIcon)
+	$asServerInfo[$iUBound][1] = $hHBmp
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
@@ -767,27 +726,28 @@ Func _DownloadPlayerImages()
 	For $iX = 0 To _GUICtrlListView_GetItemCount($idServerPlayers) -1
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) <> 0 Then ContinueLoop
 
-		$sFileName = _GUICtrlListView_GetItemText($idServerPlayers, $iX) & ".png"
-		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & _GUICtrlListView_GetItemText($idServerPlayers, $iX) & ".png"
+		$sFileName = _GUICtrlListView_GetItemText($idServerPlayers, $iX)
+		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
+		$sFileNameTEMP = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".tmp"
 
 		If FileExists($sFileNameHEAD) Then
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			AdlibRegister("_DownloadPlayerImages")
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
-			$avInet = InetGet("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName, @ScriptDir & "\TemporaryFiles\" & $sFileName)
+			$avInet = InetGet("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $sFileNameTEMP)
 			If $avInet = 0 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
 			Else
-				$hImage = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\TemporaryFiles\" & $sFileName)
+				$hImage = _GDIPlus_ImageLoadFromFile($sFileNameTEMP)
 
 				$hWnd = _WinAPI_GetDesktopWindow()
 				$hDC = _WinAPI_GetDC($hWnd)
 				$hBMP = _WinAPI_CreateCompatibleBitmap($hDC, 32, 32)
 				_WinAPI_ReleaseDC($hWnd, $hDC)
 
-				$hImageCropped = _GDIPlus_BitmapCreateFromHBITMAP ($hBMP)
-				$hGraphic = _GDIPlus_ImageGetGraphicsContext ($hImageCropped)
+				$hImageCropped = _GDIPlus_BitmapCreateFromHBITMAP($hBMP)
+				$hGraphic = _GDIPlus_ImageGetGraphicsContext($hImageCropped)
 				_GDIPlus_GraphicsSetInterpolationMode($hGraphic, 5)
 				_GDIPlus_GraphicsDrawImageRectRect($hGraphic, $hImage, 7.5, 7.5, 8, 8, 0, 0, 32, 32)
 				$CLSID = _GDIPlus_EncodersGetCLSID("PNG")
@@ -798,7 +758,7 @@ Func _DownloadPlayerImages()
 				_GDIPlus_GraphicsDispose ($hGraphic)
 				_WinAPI_DeleteObject($hBMP)
 
-				FileDelete(@ScriptDir & "\TemporaryFiles\" & $sFileName)
+				FileDelete($sFileNameTEMP)
 
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			EndIf
