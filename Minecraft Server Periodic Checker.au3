@@ -214,6 +214,7 @@ $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY -
 Local $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
+Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default.png")
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
 
@@ -234,7 +235,6 @@ Global $hObj = _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItP
 
 _AvatarsDelete()
 AdlibRegister("_ServerCheck")
-_UpdateSpecs()
 
 While 1
 	Switch GUIGetMsg()
@@ -485,10 +485,12 @@ Func _ServerScanner()
 							Else   ;Pre 1.7 protocols
 								$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
 
-								If UBound($aRet) = 7 Then
+								If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
+;~ 									$oObj.Log($aRet[3])
+									If StringReplace($aRet[3], ".", "") >= 170 Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "New")
 									$oObj.Log("Online (1.4 - 1.7 protocol)")
 									$oObj.Results($asServers[$iX], $asPorts[$iY][0], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
-								Else
+								Else   ;pre 1.4 protocol
 									$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 									If UBound($aRet) = 4 Then
 										If $asPorts[$iY][1] = "True" Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "Old")
@@ -738,6 +740,11 @@ Func _DownloadPlayerImages()
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
 			$dInet = InetRead("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $INET_FORCERELOAD)
+;~ 			ConsoleWrite(@error & @LF)
+;~ 			ConsoleWrite($dInet & @LF)
+;~ 			If @error = 13 Then
+;~ 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
+;~ 			Else
 			If $dInet = "" Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
 			Else
@@ -1098,9 +1105,6 @@ Func _WM_GETMINMAXINFO($hwnd, $Msg, $wParam, $lParam)
     DllStructSetData($tagMaxinfo, 8, $aiGuiMin[3]) ; min Y
     Return 0
 EndFunc   ;==>WM_GETMINMAXINFO
-
-Func _UpdateSpecs()
-EndFunc
 
 Func _CheckForUpdate()
 	Local $asInfo = InetGetInfo($aInet)
