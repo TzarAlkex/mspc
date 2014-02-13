@@ -742,10 +742,9 @@ Func _DownloadPlayerImages()
 			$dInet = InetRead("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $INET_FORCERELOAD)
 ;~ 			ConsoleWrite(@error & @LF)
 ;~ 			ConsoleWrite($dInet & @LF)
-;~ 			If @error = 13 Then
-;~ 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
-;~ 			Else
-			If $dInet = "" Then
+			If @error = 13 Then
+				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
+			ElseIf $dInet = "" Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
 			Else
 				Local $hImage = _GDIPlus_ImageCreateFromMemory($dInet)
