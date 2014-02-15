@@ -211,7 +211,7 @@ $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 8
 GUICtrlSetState(-1, $GUI_HIDE)
 
 $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
-Local $idServerPlayersImageList = _GUIImageList_Create(32, 32)
+Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
 Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default.png")
@@ -692,7 +692,13 @@ EndFunc
 #region
 Func _ServerInfoShow($iIndex)
 	Local $iFlag = False
+
 	_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($idServerPlayers))
+	$hImageList = _GUICtrlListView_GetImageList($idServerPlayers, 0)
+	_GUIImageList_Remove($hImageList, -1)
+	Global $iListNew = _ImageList_AddImage($hImageList, @ScriptDir & "\PleaseWait.png")
+	Global $iListError = _ImageList_AddImage($hImageList, @ScriptDir & "\Error.png")
+	Global $iListDefault = _ImageList_AddImage($hImageList, @ScriptDir & "\Default.png")
 
 	Local $sServer = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex)
 	Local $iPort = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex, 1)
