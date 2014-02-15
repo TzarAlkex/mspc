@@ -273,6 +273,7 @@ While 1
 			_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
 			_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
 			IniWrite(@ScriptDir & "\Servers.ini", $sIP, $sPort, "False")
+			GUICtrlSetState(-1, $GUI_CHECKED)
 		Case $idScanNow
 			_ServerCheck()
 		Case $idServerDelete

@@ -7,6 +7,7 @@
 *Fixed default scan timer
 *Made MOTD column display better
 *Added Avatar cleanup PLUS some GUI fixes
+*Newly added servers are ON by default
 0.0.0.16
 *Added User adjustable Timeout to connection attempts
 0.0.0.15
