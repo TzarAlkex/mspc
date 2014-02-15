@@ -214,7 +214,8 @@ $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY -
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
-Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default.png")
+Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
+Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
 
@@ -694,11 +695,8 @@ Func _ServerInfoShow($iIndex)
 	Local $iFlag = False
 
 	_GUICtrlListView_DeleteAllItems(GUICtrlGetHandle($idServerPlayers))
-	$hImageList = _GUICtrlListView_GetImageList($idServerPlayers, 0)
-	_GUIImageList_Remove($hImageList, -1)
-	Global $iListNew = _ImageList_AddImage($hImageList, @ScriptDir & "\PleaseWait.png")
-	Global $iListError = _ImageList_AddImage($hImageList, @ScriptDir & "\Error.png")
-	Global $iListDefault = _ImageList_AddImage($hImageList, @ScriptDir & "\Default.png")
+	_GUIImageList_Destroy(_GUICtrlListView_GetImageList($idServerPlayers, 0))
+	_GUICtrlListView_SetImageList($idServerPlayers, _GUIImageList_Duplicate($idServerPlayersImageListDuplicate), 0)
 
 	Local $sServer = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex)
 	Local $iPort = _GUICtrlListView_GetItemText(GUICtrlGetHandle($idServers), $iIndex, 1)
@@ -746,8 +744,6 @@ Func _DownloadPlayerImages()
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
 			$dInet = InetRead("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $INET_FORCERELOAD)
-;~ 			ConsoleWrite(@error & @LF)
-;~ 			ConsoleWrite($dInet & @LF)
 			If @error = 13 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
 			ElseIf $dInet = "" Then
