@@ -4,4 +4,3 @@
 *AND http://www.autoitscript.com/forum/topic/132121-scrolling-credits/?p=920334
 *Find out why _GUICtrlListView_GetItemText() doesn't work as expected in rev. 24 and report to maintainers
 *Find and fix possible memory leak when selecting another server
-*Figure out what to do with people like mork666 (he never set any skin, should show up as Steve)
