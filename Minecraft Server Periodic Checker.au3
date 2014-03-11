@@ -210,7 +210,7 @@ $idServerImage = GUICtrlCreatePic(@ScriptDir & "\Svartnos.jpg", 655, 25, 64, 64)
 $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
 GUICtrlSetState(-1, $GUI_HIDE)
 
-$idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+$idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
@@ -717,7 +717,20 @@ Func _ServerInfoShow($iIndex)
 	For $iX = 0 To UBound($asServerPlayers) -1
 		If $asServerPlayers[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
 
-		_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][1], $iListNew)
+		Local $iSetViewDetails = False
+		If $asServerPlayers[$iX][1] <> "" Then
+			_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][1], $iListNew)
+		Else
+			_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][2], $iListNew)
+			$iSetViewDetails = True
+		EndIf
+		If $iSetViewDetails Then
+			_GUICtrlListView_SetView($idServerPlayers, 0)
+			_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
+		Else
+			_GUICtrlListView_SetView($idServerPlayers, 1)
+		EndIf
+
 		$iFlag = True
 	Next
 	If $iFlag Then
