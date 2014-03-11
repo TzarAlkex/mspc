@@ -102,11 +102,9 @@ $hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
 Local $aiGuiMin = WinGetPos($hGui)
 
 GUICtrlCreateGroup("Add server", 5, 5, 375, 70)
-$idIP = GUICtrlCreateInput("", 20, 30, 200, 25)
-GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server Address")
-$idPort = GUICtrlCreateInput("", 230, 30, 80, 25, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
-GUICtrlSendMsg($idPort, $EM_SETCUEBANNER, True, "Server Port")
-GUICtrlSetTip(-1, "If leaved empty, the default Minecraft port (25565) will be used")
+$idIP = GUICtrlCreateInput("", 20, 30, 290, 25)
+GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server address")
+GUICtrlSetTip(-1, "Accept all formats Minecraft understands")
 $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 
 GUICtrlCreateGroup("Scan/Timeout (in seconds)", 390, 5, 235, 70)
@@ -198,7 +196,7 @@ If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(246) & "ttbullarIsTast
 EndIf
 
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 5, $iGuiY - 30, $iGuiX -10, 25)
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 5, $iGuiY - 30, 600, 25)
 
 $idPopupDummy = GUICtrlCreateDummy()
 
@@ -246,17 +244,25 @@ While 1
 			Next
 			Exit
 		Case $idAdd
-			Local $sIP = GUICtrlRead($idIP), $sPort = GUICtrlRead($idPort)
-			If $sPort = "" Then $sPort = $iDefaultPort
-			If $sIP = "" Then
-				MsgBox(48, StringTrimRight(@ScriptName, 4), "Server Address must be filled in", 0, $hGui)
+;~ 			Local $sIP = GUICtrlRead($idIP), $sPort = GUICtrlRead($idPort)
+;~ 			If $sPort = "" Then $sPort = $iDefaultPort
+			Local $asAddress = StringSplit(GUICtrlRead($idIP), ":", $STR_NOCOUNT)
+;~ 			If $sIP = "" Then
+;~ 				MsgBox(48, StringTrimRight(@ScriptName, 4), "Server Address must be filled in", 0, $hGui)
+;~ 				ContinueLoop
+;~ 			EndIf
+			If $asAddress[0] = "" Then
 				ContinueLoop
+			ElseIf UBound($asAddress) = 1 Then
+				ReDim $asAddress[2]
+				$asAddress[1] = $iDefaultPort
 			EndIf
+
 			Local $iIndex = -1
 			While 1
-				$iIndex = _GUICtrlListView_FindText($idServers, $sIP, $iIndex, False, False)
+				$iIndex = _GUICtrlListView_FindText($idServers, $asAddress[0], $iIndex, False, False)
 				If $iIndex <> -1 Then
-					If _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $sPort Then
+					If _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $asAddress[1] Then
 						MsgBox(48, StringTrimRight(@ScriptName, 4), "You already have a server with this address and port added!", 0, $hGui)
 						ContinueLoop 2
 					Else
@@ -267,12 +273,12 @@ While 1
 				EndIf
 			WEnd
 
-			GUICtrlCreateListViewItem($sIP & "|" & $sPort, $idServers)
+			GUICtrlCreateListViewItem($asAddress[0] & "|" & $asAddress[1], $idServers)
 			GUICtrlSetBkColor(-1, 0xFFFFFF)
 			GUICtrlSetColor(-1, 0)
 			_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
 			_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
-			IniWrite(@ScriptDir & "\Servers.ini", $sIP, $sPort, "False")
+			IniWrite(@ScriptDir & "\Servers.ini", $asAddress[0], $asAddress[1], "False")
 			GUICtrlSetState(-1, $GUI_CHECKED)
 		Case $idScanNow
 			_ServerCheck()
