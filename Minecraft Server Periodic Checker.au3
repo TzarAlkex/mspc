@@ -727,11 +727,12 @@ Func _ServerInfoShow($iIndex)
 		Local $aiGui = WinGetPos($hGui)
 		WinMove($hGui, "", $aiGui[0], $aiGui[1], $aiGuiMin[2] -187, $aiGuiMin[3])
 	EndIf
-	AdlibRegister("_DownloadPlayerImages")
+	AdlibRegister("_DownloadPlayerImages", 100)
 EndFunc
 
 Func _DownloadPlayerImages()
 	AdlibUnRegister("_DownloadPlayerImages")
+	Local $iTimeOut = TimerInit()
 	For $iX = 0 To _GUICtrlListView_GetItemCount($idServerPlayers) -1
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) <> 0 Then ContinueLoop
 
@@ -775,7 +776,7 @@ Func _DownloadPlayerImages()
 
 			AdlibRegister("_DownloadPlayerImages")
 		EndIf
-		ExitLoop
+		If TimerDiff($iTimeOut) > 100 Then ExitLoop
 	Next
 EndFunc
 
