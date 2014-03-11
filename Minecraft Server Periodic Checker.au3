@@ -197,8 +197,8 @@ If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(246) & "ttbullarIsTast
 	AdlibRegister("_CheckForUpdate", 100)
 EndIf
 
-GUICtrlCreateLabel("Tip 1: Check items to include in scan", 5, $iGuiY - 30, 200, 25)
-GUICtrlCreateLabel("Tip 2: Rightclick item to delete and stuff", 435, $iGuiY - 30, 200, 25, $SS_RIGHT)
+Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 5, $iGuiY - 30, $iGuiX -10, 25)
 
 $idPopupDummy = GUICtrlCreateDummy()
 
@@ -373,15 +373,43 @@ Func _ServerCheck()
 
 	AdlibUnRegister("_ScanningCrashedReset")
 	AdlibUnRegister("_ServerCheck")
+	AdlibUnRegister(_HintAdd)
 	GUICtrlSetData($idScanNow, "Scanning under way")
 	GUICtrlSetState($idScanNow, $GUI_DISABLE)
 	AdlibRegister("_WorkingAnimation")
+	AdlibRegister(_HintRemove, 20)
 
 	If @Compiled Then
 		$iPid = Run(FileGetShortName(@AutoItExe) & " /ServerScanner " & @AutoItPID)
 	Else
 		$iPid = Run(@AutoItExe & ' "' & @ScriptFullPath & '" /ServerScanner ' & @AutoItPID)
 	EndIf
+EndFunc
+
+Func _HintRemove()
+	Local $sText = GUICtrlRead($cIdHints)
+
+	If StringLen($sText) = 0 Then
+		AdlibUnRegister(_HintRemove)
+		$asHint[0] += 1
+		If $asHint[0] = UBound($asHint) Then $asHint[0] = 1
+		_HintAdd()
+		AdlibRegister(_HintAdd, 20)
+		Return
+	EndIf
+
+	GUICtrlSetData($cIdHints, StringTrimRight($sText, 1))
+EndFunc
+
+Func _HintAdd()
+	Local $iLength = StringLen(GUICtrlRead($cIdHints))
+
+	If $iLength = StringLen($asHint[$asHint[0]]) Then
+		AdlibUnRegister(_HintAdd)
+		Return
+	EndIf
+
+	GUICtrlSetData($cIdHints, StringLeft($asHint[$asHint[0]], $iLength +1))
 EndFunc
 
 Func _WorkingAnimation()
