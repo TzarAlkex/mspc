@@ -1,4 +1,4 @@
-#NoTrayIcon
+﻿#NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_UseX64=n
@@ -101,24 +101,25 @@ $hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
 
 Local $aiGuiMin = WinGetPos($hGui)
 
+
 GUICtrlCreateGroup("Add server", 5, 5, 375, 70)
 $idIP = GUICtrlCreateInput("", 20, 30, 290, 25)
 GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server address")
-GUICtrlSetTip(-1, "Accept all formats Minecraft understands")
+GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
 $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
+
 
 GUICtrlCreateGroup("Scan/Timeout (in seconds)", 390, 5, 235, 70)
 $idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
 
-$cIdTimeout = GUICtrlCreateCombo("", 560, 30, 50, 25)
-Global $hTimeout = GUICtrlGetHandle(-1)
-$iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
-If $iTimeoutSeconds Then
-	GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
-Else
-	GUICtrlSetData(-1, 10, 10)
-EndIf
-
+;~ $cIdTimeout = GUICtrlCreateCombo("", 560, 30, 50, 25)
+;~ Global $hTimeout = GUICtrlGetHandle(-1)
+;~ $iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
+;~ If $iTimeoutSeconds Then
+;~ 	GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
+;~ Else
+;~ 	GUICtrlSetData(-1, 10, 10)
+;~ EndIf
 
 $idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/Max Players|MOTD", 5, 80, 630, $iGuiY - 195, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 $idServerContext = GUICtrlCreateContextMenu($idServers)
@@ -150,22 +151,23 @@ If $sMinutesBetweenScans <> "IsglassIsTasty" Then
 	IniDelete(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans")
 EndIf
 
+
 GUICtrlCreateGroup("Settings", 5, $iGuiY - 110, 630, 65)
-GUICtrlCreateLabel("Seconds between scans=", 20, $iGuiY - 95, 150, 20)
-$idSeconds = GUICtrlCreateCombo("", 180, $iGuiY - 95, 50, 25)
-If $sSecondsBetweenScans = "" Then
-	$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
-EndIf
-Local $sCombo = "60|180|300|"
-If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
-	If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
-		$sCombo &= $sSecondsBetweenScans & "|"
-	EndIf
-	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
-Else
-	GUICtrlSetData(-1, $sCombo, 60)
-EndIf
-GUICtrlCreateLabel("(you can type your own value)", 240, $iGuiY - 95, 150, 20)
+;~ GUICtrlCreateLabel("Seconds between scans=", 20, $iGuiY - 95, 150, 20)
+;~ $idSeconds = GUICtrlCreateCombo("", 180, $iGuiY - 95, 50, 25)
+;~ If $sSecondsBetweenScans = "" Then
+;~ 	$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
+;~ EndIf
+;~ Local $sCombo = "60|180|300|"
+;~ If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
+;~ 	If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
+;~ 		$sCombo &= $sSecondsBetweenScans & "|"
+;~ 	EndIf
+;~ 	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
+;~ Else
+;~ 	GUICtrlSetData(-1, $sCombo, 60)
+;~ EndIf
+;~ GUICtrlCreateLabel("(you can type your own value)", 240, $iGuiY - 95, 150, 20)
 
 Local $idColorizeListview = GUICtrlCreateCheckbox("Colorize listview (green = success, red = fail)", 400, $iGuiY - 95, 230, 20)
 Global $hColorizeListview = GUICtrlGetHandle(-1)
@@ -190,13 +192,16 @@ Global $idUpdateLabel = -1
 Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(246) & "ttbullarIsTasty")
 If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(246) & "ttbullarIsTasty" Then
 	GUICtrlSetState(-1, $GUI_CHECKED)
-	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 210, $iGuiY - 30, 220, 25, $SS_CENTER)
+	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 370, $iGuiY - 35, 180, 25, $SS_CENTERIMAGE)
 	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
 	AdlibRegister("_CheckForUpdate", 100)
 EndIf
 
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 5, $iGuiY - 30, 600, 25)
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 355, 25, $SS_CENTERIMAGE)
+
+;~ Global $cIdSettings = GUICtrlCreateButton("Settings ▲", 550, $iGuiY - 30, 85, 25)
+Global $cIdSettings = GUICtrlCreateCheckbox("Settings ▲", 550, $iGuiY - 35, 85, 25, $BS_PUSHLIKE)
 
 $idPopupDummy = GUICtrlCreateDummy()
 
@@ -220,9 +225,58 @@ _GUICtrlListView_SetView($idServerPlayers, 1)
 $idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
 
 
+Local $asSettingsSize[] = [200, 235]
+Global $hSettingsGui = GUICreate(StringTrimRight(@ScriptName, 4), $asSettingsSize[0], $asSettingsSize[1], 440, 205, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
+
+
+GUICtrlCreateGroup("Scan", 5, 5, $asSettingsSize[0] -10, 75)
+
+GUICtrlCreateLabel("Timer", 15, 20, 50, 25, $SS_CENTERIMAGE)
+$idSeconds = GUICtrlCreateCombo("", 70, 20, 50, 25)
+If $sSecondsBetweenScans = "" Then
+	$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
+EndIf
+Local $sCombo = "60|180|300|"
+If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
+	If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
+		$sCombo &= $sSecondsBetweenScans & "|"
+	EndIf
+	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
+Else
+	GUICtrlSetData(-1, $sCombo, 60)
+EndIf
+GUICtrlCreateLabel("(Seconds)", 130, 20, 60, 25, $SS_CENTERIMAGE)
+
+GUICtrlCreateLabel("Timeout", 15, 50, 50, 25, $SS_CENTERIMAGE)
+$cIdTimeout = GUICtrlCreateCombo("", 70, 50, 50, 25)
+Global $hTimeout = GUICtrlGetHandle(-1)
+Local $iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
+If $iTimeoutSeconds Then
+	GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
+Else
+	GUICtrlSetData(-1, 10, 10)
+EndIf
+GUICtrlCreateLabel("(Seconds)", 130, 50, 60, 25, $SS_CENTERIMAGE)
+
+
+GUICtrlCreateGroup("When server goes online", 5, 85, $asSettingsSize[0] -10, 60)
+GUICtrlCreateCheckbox("Flash window", 15, 100, $asSettingsSize[0] -30, 20)
+
+GUICtrlCreateCheckbox("Notify in tray bar", 15, 120, $asSettingsSize[0] -30, 20)
+GUICtrlSetState(-1, $GUI_HIDE)
+
+
+GUICtrlCreateGroup("Misc", 5, 150, $asSettingsSize[0] -10, 80)
+GUICtrlCreateCheckbox("Colorize listview", 15, 165, $asSettingsSize[0] -30, 20)
+
+GUICtrlCreateCheckbox("Count in tray icon", 15, 185, $asSettingsSize[0] -30, 20)
+
+GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
+
+
 WinMove($hGui, "", $aiGuiMin[0], $aiGuiMin[1], $aiGuiMin[2] -187, $aiGuiMin[3])
 
-GUISetState()
+GUISetState(@SW_SHOW, $hGui)
 GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
 GUIRegisterMsg($WM_COMMAND, "_WM_COMMAND")
 GUIRegisterMsg($WM_GETMINMAXINFO, "_WM_GETMINMAXINFO")
@@ -244,13 +298,7 @@ While 1
 			Next
 			Exit
 		Case $idAdd
-;~ 			Local $sIP = GUICtrlRead($idIP), $sPort = GUICtrlRead($idPort)
-;~ 			If $sPort = "" Then $sPort = $iDefaultPort
 			Local $asAddress = StringSplit(GUICtrlRead($idIP), ":", $STR_NOCOUNT)
-;~ 			If $sIP = "" Then
-;~ 				MsgBox(48, StringTrimRight(@ScriptName, 4), "Server Address must be filled in", 0, $hGui)
-;~ 				ContinueLoop
-;~ 			EndIf
 			If $asAddress[0] = "" Then
 				ContinueLoop
 			ElseIf UBound($asAddress) = 1 Then
@@ -288,6 +336,16 @@ While 1
 			_ServerPopupShow()
 		Case $idUpdateLabel
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
+		Case $cIdSettings
+			If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED Then
+;~ 				ConsoleWrite("yes" & @LF)
+				GUICtrlSetData($cIdSettings, "Settings ▼")
+				GUISetState(@SW_SHOWNOACTIVATE, $hSettingsGui)
+			Else
+;~ 				ConsoleWrite("no" & @LF)
+				GUICtrlSetData($cIdSettings, "Settings ▲")
+				GUISetState(@SW_HIDE, $hSettingsGui)
+			EndIf
 		Case $idPopupDummy
 			$iSkipLabelProc = True
 			$iCurrent = GUICtrlRead($idPopupDummy)
@@ -344,7 +402,7 @@ Func _ServerPopupAdd($sServerAddress, $sPort, $iY)
 	_GUICtrlListView_SetColumnWidth($avPopups[UBound($avPopups) -1][1], 3, $LVSCW_AUTOSIZE)
 	_GUICtrlListView_SetColumnWidth($avPopups[UBound($avPopups) -1][1], 4, $LVSCW_AUTOSIZE)
 	$avPopups[UBound($avPopups) -1][4] = GUICtrlCreateLabel("[Close]", $iGuiX -50, 0, 50, $iGuiY, BitOR($SS_CENTER, $SS_CENTERIMAGE))
-	GUISetState()
+	GUISetState(@SW_SHOW, $avPopups[UBound($avPopups) -1][0])
 
 	$avPopups[UBound($avPopups) -1][2] = DllCallbackRegister("_LabelProc", "int", "hwnd;uint;wparam;lparam")
 	$avPopups[UBound($avPopups) -1][3] = _WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[UBound($avPopups) -1][4]), $GWL_WNDPROC, DllCallbackGetPtr($avPopups[UBound($avPopups) -1][2]))
