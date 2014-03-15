@@ -8,9 +8,12 @@
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
-#AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, TEST_JPG_1
+#AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
+#AutoIt3Wrapper_Res_File_Add=PleaseWait.png, rt_rcdata, AVATAR_WAIT
+#AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
+#AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#Obfuscator_Ignore_Funcs=_ServerResults, _ServerFinished, _MemVirtualFree, _MemVirtualAlloc, _HintRemove, _HintAdd, _CheckForUpdateMaster
+#Obfuscator_Ignore_Funcs=_ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _HintRemove, _HintAdd, _CheckForUpdateMaster
 
 #cs ----------------------------------------------------------------------------
 
@@ -41,7 +44,7 @@
 #include <Date.au3>
 #include <InetConstants.au3>
 #include <FontConstants.au3>
-#include "resources.au3"
+;~ #include "resources.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -157,10 +160,10 @@ GUICtrlCreateGroup("1.7+ only", 645, 5, 177, $iGuiY - 15)
 
 $idServerImage = GUICtrlCreatePic("", 655, 25, 64, 64)
 If @Compiled Then
-;~ 	_ResourceSetImageToCtrl($idServerImage, "TEST_JPG_1")
-;~ 	$test = _ResourceGetAsRaw(@ScriptFullPath, "TEST_JPG_1", "rcdata")
-;~ 	$test = _ResourceGetAsRaw2(@ScriptFullPath, "rt_rcdata", "TEST_JPG_1")
-	$test = _ResourceGetAsRaw2(@ScriptFullPath, 10, "TEST_JPG_1")
+;~ 	_ResourceSetImageToCtrl($idServerImage, "SERVER_DEFAULT")
+;~ 	$test = _ResourceGetAsRaw(@ScriptFullPath, "SERVER_DEFAULT", "rcdata")
+;~ 	$test = _ResourceGetAsRaw2(@ScriptFullPath, "rt_rcdata", "SERVER_DEFAULT")
+	$test = _ResourceGetAsRaw2(@ScriptFullPath, 10, "SERVER_DEFAULT")
 ;~ 	MsgBox(0, @error, $test)
 	Local $hBmp = Load_BMP_From_Mem(Binary($test), True)
 ;~ 	MsgBox(0, $test, $hBmp)
@@ -175,9 +178,15 @@ GUICtrlSetState(-1, $GUI_HIDE)
 
 $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
-Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
-Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
-Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
+If @Compiled Then
+	Global $iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
+	Global $iListError = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_ERROR")
+	Global $iListDefault = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_DEFAULT")
+Else
+	Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
+	Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
+	Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
+EndIf
 Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
@@ -799,8 +808,8 @@ Func _ServerInfoShow($iIndex)
 	Next
 	If $iFlag = False Then
 		If @Compiled Then
-;~ 			_ResourceSetImageToCtrl($idServerImage, "TEST_JPG_1")
-			Local $hBmp = Load_BMP_From_Mem(Binary(_ResourceGetAsRaw2(@ScriptFullPath, 10, "TEST_JPG_1")), True)
+;~ 			_ResourceSetImageToCtrl($idServerImage, "SERVER_DEFAULT")
+			Local $hBmp = Load_BMP_From_Mem(Binary(_ResourceGetAsRaw2(@ScriptFullPath, 10, "SERVER_DEFAULT")), True)
 			_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
 			_WinAPI_DeleteObject($hBmp)
 		Else
@@ -920,6 +929,16 @@ Func _ImageList_AddImage($hImageList, $sFile)
 	Local $iIndex = _GUIImageList_Add($hImageList, $gc_PNG)
 	_WinAPI_DeleteObject($gc_PNG)
 	_GDIPlus_BitmapDispose($hBitmap)
+	Return $iIndex
+EndFunc
+
+Func _ImageList_AddImageFromResource($hImageList, $sName)
+;~ 	Local $hBitmap = _GDIPlus_BitmapCreateFromFile($sFile)
+;~ 	Local $gc_PNG = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBitmap)
+	Local $gc_PNG = Load_BMP_From_Mem(Binary(_ResourceGetAsRaw2(@ScriptFullPath, 10, $sName)), True)
+	Local $iIndex = _GUIImageList_Add($hImageList, $gc_PNG)
+	_WinAPI_DeleteObject($gc_PNG)
+;~ 	_GDIPlus_BitmapDispose($hBitmap)
 	Return $iIndex
 EndFunc
 

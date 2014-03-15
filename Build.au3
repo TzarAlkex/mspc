@@ -15,7 +15,7 @@
 FileDelete(@UserProfileDir & "\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip")
 
 ;Creates and uploads new archive
-RunWait('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a "' & @UserProfileDir & '\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "ReadMe.txt" "TemporaryFiles" "PleaseWait.png" "Error.png" "Default3.png"', @ScriptDir)
+RunWait('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a "' & @UserProfileDir & '\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "ReadMe.txt" "TemporaryFiles"', @ScriptDir)
 
 ;Clean folder
 FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.au3.tmp")
