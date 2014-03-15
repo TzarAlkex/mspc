@@ -112,15 +112,6 @@ $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 GUICtrlCreateGroup("Scan/Timeout (in seconds)", 390, 5, 235, 70)
 $idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
 
-;~ $cIdTimeout = GUICtrlCreateCombo("", 560, 30, 50, 25)
-;~ Global $hTimeout = GUICtrlGetHandle(-1)
-;~ $iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
-;~ If $iTimeoutSeconds Then
-;~ 	GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
-;~ Else
-;~ 	GUICtrlSetData(-1, 10, 10)
-;~ EndIf
-
 $idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/Max Players|MOTD", 5, 80, 630, $iGuiY - 195, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
@@ -151,56 +142,9 @@ If $sMinutesBetweenScans <> "IsglassIsTasty" Then
 	IniDelete(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans")
 EndIf
 
-
-GUICtrlCreateGroup("Settings", 5, $iGuiY - 110, 630, 65)
-;~ GUICtrlCreateLabel("Seconds between scans=", 20, $iGuiY - 95, 150, 20)
-;~ $idSeconds = GUICtrlCreateCombo("", 180, $iGuiY - 95, 50, 25)
-;~ If $sSecondsBetweenScans = "" Then
-;~ 	$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
-;~ EndIf
-;~ Local $sCombo = "60|180|300|"
-;~ If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
-;~ 	If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
-;~ 		$sCombo &= $sSecondsBetweenScans & "|"
-;~ 	EndIf
-;~ 	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
-;~ Else
-;~ 	GUICtrlSetData(-1, $sCombo, 60)
-;~ EndIf
-;~ GUICtrlCreateLabel("(you can type your own value)", 240, $iGuiY - 95, 150, 20)
-
-Local $idColorizeListview = GUICtrlCreateCheckbox("Colorize listview (green = success, red = fail)", 400, $iGuiY - 95, 230, 20)
-Global $hColorizeListview = GUICtrlGetHandle(-1)
-Local $sColorizeListview = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", "MatIsTasty")
-If $sColorizeListview = "1" Or $sColorizeListview = "MatIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
-
-$idFlashWin = GUICtrlCreateCheckbox("Flash window when server goes online", 20, $iGuiY - 75, 210, 20)
-Local $sFlashWindow = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", "PizzaIsTasty")
-If $sFlashWindow = "1" Or $sFlashWindow = "PizzaIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
-
-Local $idCountTray = GUICtrlCreateCheckbox("Count in tray icon", 240, $iGuiY - 75, 150, 20)
-Global $hCountTray = GUICtrlGetHandle(-1)
-Local $sCountTray = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", "JulmustIsTasty")
-If $sCountTray = "1" Or $sCountTray = "JulmustIsTasty" Then
-	GUICtrlSetState(-1, $GUI_CHECKED)
-	Opt("TrayIconHide", 0)
-	_TraySet($iServerTray)
-EndIf
-
-Local $idCheckForUpdate = GUICtrlCreateCheckbox("Check if a newer version is available at start", 400, $iGuiY - 75, 230, 20)
-Global $idUpdateLabel = -1
-Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(246) & "ttbullarIsTasty")
-If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(246) & "ttbullarIsTasty" Then
-	GUICtrlSetState(-1, $GUI_CHECKED)
-	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 370, $iGuiY - 35, 180, 25, $SS_CENTERIMAGE)
-	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
-	AdlibRegister("_CheckForUpdate", 100)
-EndIf
-
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
 Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 355, 25, $SS_CENTERIMAGE)
 
-;~ Global $cIdSettings = GUICtrlCreateButton("Settings ▲", 550, $iGuiY - 30, 85, 25)
 Global $cIdSettings = GUICtrlCreateCheckbox("Settings ▲", 550, $iGuiY - 35, 85, 25, $BS_PUSHLIKE)
 
 $idPopupDummy = GUICtrlCreateDummy()
@@ -260,18 +204,42 @@ GUICtrlCreateLabel("(Seconds)", 130, 50, 60, 25, $SS_CENTERIMAGE)
 
 
 GUICtrlCreateGroup("When server goes online", 5, 85, $asSettingsSize[0] -10, 60)
-GUICtrlCreateCheckbox("Flash window", 15, 100, $asSettingsSize[0] -30, 20)
+
+Global $idFlashWin = GUICtrlCreateCheckbox("Flash window", 15, 100, $asSettingsSize[0] -30, 20)
+Local $sFlashWindow = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", "PizzaIsTasty")
+If $sFlashWindow = "1" Or $sFlashWindow = "PizzaIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
 
 GUICtrlCreateCheckbox("Notify in tray bar", 15, 120, $asSettingsSize[0] -30, 20)
 GUICtrlSetState(-1, $GUI_HIDE)
 
 
 GUICtrlCreateGroup("Misc", 5, 150, $asSettingsSize[0] -10, 80)
-GUICtrlCreateCheckbox("Colorize listview", 15, 165, $asSettingsSize[0] -30, 20)
 
-GUICtrlCreateCheckbox("Count in tray icon", 15, 185, $asSettingsSize[0] -30, 20)
+Global $idColorizeListview = GUICtrlCreateCheckbox("Colorize listview", 15, 165, $asSettingsSize[0] -30, 20)
+Global $hColorizeListview = GUICtrlGetHandle(-1)
+Local $sColorizeListview = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", "MatIsTasty")
+If $sColorizeListview = "1" Or $sColorizeListview = "MatIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
 
-GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
+Global $idCountTray = GUICtrlCreateCheckbox("Count in tray icon", 15, 185, $asSettingsSize[0] -30, 20)
+Global $hCountTray = GUICtrlGetHandle(-1)
+Local $sCountTray = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", "JulmustIsTasty")
+If $sCountTray = "1" Or $sCountTray = "JulmustIsTasty" Then
+	GUICtrlSetState(-1, $GUI_CHECKED)
+	Opt("TrayIconHide", 0)
+	_TraySet($iServerTray)
+EndIf
+
+Global $idCheckForUpdate = GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
+Global $idUpdateLabel = -1
+Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "KöttbullarIsTasty")
+If $sCheckForUpdate = "1" Or $sCheckForUpdate = "KöttbullarIsTasty" Then
+	GUICtrlSetState(-1, $GUI_CHECKED)
+	GUISwitch($hGui)
+	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 370, $iGuiY - 35, 180, 25, $SS_CENTERIMAGE)
+	GUISwitch($hSettingsGui)
+	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
+	AdlibRegister("_CheckForUpdate", 100)
+EndIf
 
 
 WinMove($hGui, "", $aiGuiMin[0], $aiGuiMin[1], $aiGuiMin[2] -187, $aiGuiMin[3])
@@ -338,11 +306,9 @@ While 1
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $cIdSettings
 			If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED Then
-;~ 				ConsoleWrite("yes" & @LF)
 				GUICtrlSetData($cIdSettings, "Settings ▼")
 				GUISetState(@SW_SHOWNOACTIVATE, $hSettingsGui)
 			Else
-;~ 				ConsoleWrite("no" & @LF)
 				GUICtrlSetData($cIdSettings, "Settings ▲")
 				GUISetState(@SW_HIDE, $hSettingsGui)
 			EndIf
@@ -580,7 +546,6 @@ Func _ServerScanner()
 								$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
 
 								If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
-;~ 									$oObj.Log($aRet[3])
 									If StringReplace($aRet[3], ".", "") >= 170 Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "New")
 									$oObj.Log("Online (1.4 - 1.7 protocol)")
 									$oObj.Results($asServers[$iX], $asPorts[$iY][0], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
