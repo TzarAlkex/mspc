@@ -150,7 +150,7 @@ Global $cIdSettings = GUICtrlCreateCheckbox("Settings ▲", 550, $iGuiY - 35, 85
 $idPopupDummy = GUICtrlCreateDummy()
 
 
-GUICtrlCreateGroup("More info", 645, 5, 177, $iGuiY - 15)
+GUICtrlCreateGroup("1.7+ only", 645, 5, 177, $iGuiY - 15)
 
 $idServerImage = GUICtrlCreatePic(@ScriptDir & "\Svartnos.jpg", 655, 25, 64, 64)
 
@@ -241,8 +241,6 @@ If $sCheckForUpdate = "1" Or $sCheckForUpdate = "KöttbullarIsTasty" Then
 	AdlibRegister("_CheckForUpdate", 100)
 EndIf
 
-
-WinMove($hGui, "", $aiGuiMin[0], $aiGuiMin[1], $aiGuiMin[2] -187, $aiGuiMin[3])
 
 GUISetState(@SW_SHOW, $hGui)
 GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
@@ -791,11 +789,7 @@ Func _ServerInfoShow($iIndex)
 		$iFlag = True
 	Next
 	If $iFlag Then
-		Local $aiGui = WinGetPos($hGui)
-		WinMove($hGui, "", $aiGui[0], $aiGui[1], $aiGuiMin[2], $aiGuiMin[3])
 	Else
-		Local $aiGui = WinGetPos($hGui)
-		WinMove($hGui, "", $aiGui[0], $aiGui[1], $aiGuiMin[2] -187, $aiGuiMin[3])
 	EndIf
 	AdlibRegister("_DownloadPlayerImages", 100)
 EndFunc
