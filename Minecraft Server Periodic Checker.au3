@@ -1,4 +1,4 @@
-﻿#NoTrayIcon
+#NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_UseX64=n
@@ -8,8 +8,9 @@
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
+#AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, TEST_JPG_1
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#Obfuscator_Ignore_Funcs=_ServerResults, _ServerFinished
+#Obfuscator_Ignore_Funcs=_ServerResults, _ServerFinished, _MemVirtualFree, _MemVirtualAlloc, _HintRemove, _HintAdd, _CheckForUpdateMaster
 
 #cs ----------------------------------------------------------------------------
 
@@ -39,6 +40,8 @@
 #include "Icons.au3"
 #include <Date.au3>
 #include <InetConstants.au3>
+#include <FontConstants.au3>
+#include "resources.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -109,10 +112,10 @@ GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
 $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 
 
-GUICtrlCreateGroup("Scan/Timeout (in seconds)", 390, 5, 235, 70)
+GUICtrlCreateGroup("Scan", 390, 5, 245, 70)
 $idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
 
-$idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/Max Players|MOTD", 5, 80, 630, $iGuiY - 195, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
+$idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/Max Players|MOTD", 5, 80, 630, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
@@ -143,16 +146,29 @@ If $sMinutesBetweenScans <> "IsglassIsTasty" Then
 EndIf
 
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 355, 25, $SS_CENTERIMAGE)
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 535, 25, $SS_CENTERIMAGE)
 
-Global $cIdSettings = GUICtrlCreateCheckbox("Settings ▲", 550, $iGuiY - 35, 85, 25, $BS_PUSHLIKE)
+Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 550, $iGuiY - 35, 85, 25, $BS_PUSHLIKE)
 
 $idPopupDummy = GUICtrlCreateDummy()
 
 
 GUICtrlCreateGroup("1.7+ only", 645, 5, 177, $iGuiY - 15)
 
-$idServerImage = GUICtrlCreatePic(@ScriptDir & "\Svartnos.jpg", 655, 25, 64, 64)
+$idServerImage = GUICtrlCreatePic("", 655, 25, 64, 64)
+If @Compiled Then
+;~ 	_ResourceSetImageToCtrl($idServerImage, "TEST_JPG_1")
+;~ 	$test = _ResourceGetAsRaw(@ScriptFullPath, "TEST_JPG_1", "rcdata")
+;~ 	$test = _ResourceGetAsRaw2(@ScriptFullPath, "rt_rcdata", "TEST_JPG_1")
+	$test = _ResourceGetAsRaw2(@ScriptFullPath, 10, "TEST_JPG_1")
+;~ 	MsgBox(0, @error, $test)
+	Local $hBmp = Load_BMP_From_Mem(Binary($test), True)
+;~ 	MsgBox(0, $test, $hBmp)
+	_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
+	_WinAPI_DeleteObject($hBmp)
+Else
+	GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
+EndIf
 
 $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
 GUICtrlSetState(-1, $GUI_HIDE)
@@ -230,15 +246,16 @@ If $sCountTray = "1" Or $sCountTray = "JulmustIsTasty" Then
 EndIf
 
 Global $idCheckForUpdate = GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
-Global $idUpdateLabel = -1
-Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "KöttbullarIsTasty")
-If $sCheckForUpdate = "1" Or $sCheckForUpdate = "KöttbullarIsTasty" Then
+;~ Global $idUpdateLabel = -1
+Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(0xF6) & "ttbullarIsTasty")
+If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(0xF6) & "ttbullarIsTasty" Then
 	GUICtrlSetState(-1, $GUI_CHECKED)
-	GUISwitch($hGui)
-	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 370, $iGuiY - 35, 180, 25, $SS_CENTERIMAGE)
-	GUISwitch($hSettingsGui)
+;~ 	GUISwitch($hGui)
+;~ 	$idUpdateLabel = GUICtrlCreateLabel("Checking for update", 370, $iGuiY - 35, 180, 25, $SS_CENTERIMAGE)
+;~ 	GUISwitch($hSettingsGui)
 	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
-	AdlibRegister("_CheckForUpdate", 100)
+	AdlibRegister(_CheckForUpdateMaster, 100)
+	$asHint[0] = -1
 EndIf
 
 
@@ -300,14 +317,16 @@ While 1
 			_ServerDelete()
 		Case $idServerShowPopup
 			_ServerPopupShow()
-		Case $idUpdateLabel
+;~ 		Case $idUpdateLabel
+;~ 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
+		Case $cIdHints
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $cIdSettings
 			If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED Then
-				GUICtrlSetData($cIdSettings, "Settings ▼")
+				GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25BC))
 				GUISetState(@SW_SHOWNOACTIVATE, $hSettingsGui)
 			Else
-				GUICtrlSetData($cIdSettings, "Settings ▲")
+				GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25B2))
 				GUISetState(@SW_HIDE, $hSettingsGui)
 			EndIf
 		Case $idPopupDummy
@@ -405,7 +424,8 @@ Func _ServerCheck()
 	GUICtrlSetData($idScanNow, "Scanning under way")
 	GUICtrlSetState($idScanNow, $GUI_DISABLE)
 	AdlibRegister("_WorkingAnimation")
-	AdlibRegister(_HintRemove, 20)
+;~ 	AdlibRegister(_HintRemove, 20)
+	If $asHint[0] <> -1 Then AdlibRegister(_HintRemove, 20)
 
 	If @Compiled Then
 		$iPid = Run(FileGetShortName(@AutoItExe) & " /ServerScanner " & @AutoItPID)
@@ -421,6 +441,18 @@ Func _HintRemove()
 		AdlibUnRegister(_HintRemove)
 		$asHint[0] += 1
 		If $asHint[0] = UBound($asHint) Then $asHint[0] = 1
+		If $asHint[$asHint[0]] = "Update found, click to open website" Then
+			GUICtrlSetCursor($cIdHints, 0)
+			GUICtrlSetColor($cIdHints, 0x0000EE)
+			GUICtrlSetFont($cIdHints, Default, $FW_DONTCARE, $GUI_FONTUNDER)
+		Else
+;~ 			GUICtrlSetCursor($cIdHints, -1)
+;~ 			GUICtrlSetStyle($cIdHints, 0)
+;~ 			GUICtrlSetStyle($cIdHints, $SS_CENTERIMAGE)
+			GUICtrlDelete($cIdHints)
+			GUISwitch($hGui)
+			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 535, 25, $SS_CENTERIMAGE)
+		EndIf
 		_HintAdd()
 		AdlibRegister(_HintAdd, 20)
 		Return
@@ -766,7 +798,14 @@ Func _ServerInfoShow($iIndex)
 		ExitLoop
 	Next
 	If $iFlag = False Then
-		GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
+		If @Compiled Then
+;~ 			_ResourceSetImageToCtrl($idServerImage, "TEST_JPG_1")
+			Local $hBmp = Load_BMP_From_Mem(Binary(_ResourceGetAsRaw2(@ScriptFullPath, 10, "TEST_JPG_1")), True)
+			_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
+			_WinAPI_DeleteObject($hBmp)
+		Else
+			GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
+		EndIf
 	EndIf
 
 	For $iX = 0 To UBound($asServerPlayers) -1
@@ -911,6 +950,228 @@ Func _AvatarsDelete()
 	FileClose($hSearch)
 EndFunc
 #endregion
+
+;======================================================================================
+; Function Name:        Load_BMP_From_Mem
+; Description:        Loads an image which is saved as a binary string and converts it to a bitmap or hbitmap
+;
+; Parameters:          $bImage:     the binary string which contains any valid image which is supported by GDI+
+; Optional:              $hHBITMAP:   if false a bitmap will be created, if true a hbitmap will be created
+;
+; Remark:                  hbitmap format is used generally for GUI internal images, $bitmap is more a GDI+ image format
+;
+; Requirement(s):      GDIPlus.au3, Memory.au3 and _GDIPlus_BitmapCreateDIBFromBitmap() from WinAPIEx.au3
+; Return Value(s):  Success: handle to bitmap or hbitmap, Error: 0
+; Error codes:        1: $bImage is not a binary string
+;                              2: unable to create stream on HGlobal
+;                              3: unable to create bitmap from stream
+;
+; Author(s):                UEZ
+; Additional Code:  thanks to progandy for the MemGlobalAlloc and tVARIANT lines
+; Version:                v0.97 Build 2012-01-04 Beta
+;=======================================================================================
+Func Load_BMP_From_Mem($bImage, $hHBITMAP = False)
+	If Not IsBinary($bImage) Then Return SetError(1, 0, 0)
+	Local $aResult
+	Local Const $memBitmap = Binary($bImage) ;load image  saved in variable (memory) and convert it to binary
+	Local Const $len = BinaryLen($memBitmap) ;get length of image
+	Local Const $hData = _MemGlobalAlloc($len, $GMEM_MOVEABLE) ;allocates movable memory  ($GMEM_MOVEABLE = 0x0002)
+	Local Const $pData = _MemGlobalLock($hData) ;translate the handle into a pointer
+	Local $tMem = DllStructCreate("byte[" & $len & "]", $pData) ;create struct
+	DllStructSetData($tMem, 1, $memBitmap) ;fill struct with image data
+	_MemGlobalUnlock($hData) ;decrements the lock count  associated with a memory object that was allocated with GMEM_MOVEABLE
+	$aResult = DllCall("ole32.dll", "int", "CreateStreamOnHGlobal", "handle", $pData, "int", True, "ptr*", 0) ;Creates a stream object that uses an HGLOBAL memory handle to store the stream contents
+	If @error Then SetError(2, 0, 0)
+	Local Const $hStream = $aResult[3]
+	$aResult = DllCall($ghGDIPDll, "uint", "GdipCreateBitmapFromStream", "ptr", $hStream, "int*", 0) ;Creates a Bitmap object based on an IStream COM interface
+	If @error Then SetError(3, 0, 0)
+	Local Const $hBitmap = $aResult[2]
+	Local $tVARIANT = DllStructCreate("word vt;word r1;word r2;word r3;ptr data; ptr")
+	DllCall("oleaut32.dll", "long", "DispCallFunc", "ptr", $hStream, "dword", 8 + 8 * @AutoItX64, _
+			"dword", 4, "dword", 23, "dword", 0, "ptr", 0, "ptr", 0, "ptr", DllStructGetPtr($tVARIANT)) ;release memory from $hStream to avoid memory leak
+	$tMem = 0
+	$tVARIANT = 0
+	If $hHBITMAP Then
+		Local Const $hHBmp = _GDIPlus_BitmapCreateDIBFromBitmap($hBitmap)
+		_GDIPlus_BitmapDispose($hBitmap)
+		Return $hHBmp
+	EndIf
+	Return $hBitmap
+EndFunc   ;==>Load_BMP_From_Mem
+
+Func _GDIPlus_BitmapCreateDIBFromBitmap($hBitmap)
+	Local $tBIHDR, $Ret, $tData, $pBits, $hResult = 0
+	$Ret = DllCall($ghGDIPDll, 'uint', 'GdipGetImageDimension', 'ptr', $hBitmap, 'float*', 0, 'float*', 0)
+	If (@error) Or ($Ret[0]) Then Return 0
+	$tData = _GDIPlus_BitmapLockBits($hBitmap, 0, 0, $Ret[2], $Ret[3], $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	$pBits = DllStructGetData($tData, 'Scan0')
+	If Not $pBits Then Return 0
+	$tBIHDR = DllStructCreate('dword;long;long;ushort;ushort;dword;dword;long;long;dword;dword')
+	DllStructSetData($tBIHDR, 1, DllStructGetSize($tBIHDR))
+	DllStructSetData($tBIHDR, 2, $Ret[2])
+	DllStructSetData($tBIHDR, 3, $Ret[3])
+	DllStructSetData($tBIHDR, 4, 1)
+	DllStructSetData($tBIHDR, 5, 32)
+	DllStructSetData($tBIHDR, 6, 0)
+	$hResult = DllCall('gdi32.dll', 'ptr', 'CreateDIBSection', 'hwnd', 0, 'ptr', DllStructGetPtr($tBIHDR), 'uint', 0, 'ptr*', 0, 'ptr', 0, 'dword', 0)
+	If (Not @error) And ($hResult[0]) Then
+		DllCall('gdi32.dll', 'dword', 'SetBitmapBits', 'ptr', $hResult[0], 'dword', $Ret[2] * $Ret[3] * 4, 'ptr', DllStructGetData($tData, 'Scan0'))
+		$hResult = $hResult[0]
+	Else
+		$hResult = 0
+	EndIf
+	_GDIPlus_BitmapUnlockBits($hBitmap, $tData)
+	Return $hResult
+EndFunc   ;==>_GDIPlus_BitmapCreateDIBFromBitmap
+
+Func _ResourceGetAsRaw($sModule, $iResName, $iResType, $iResLang = 0)
+	Local $iLoaded
+	Local $a_hCall = DllCall("kernel32.dll", "hwnd", "GetModuleHandleW", "wstr", $sModule)
+	If @error Then
+		Return SetError(1, 0, "")
+	EndIf
+	If Not $a_hCall[0] Then
+		$a_hCall = DllCall("kernel32.dll", "hwnd", "LoadLibraryExW", "wstr", $sModule, "hwnd", 0, "int", 34)
+		If @error Or Not $a_hCall[0] Then
+			Return SetError(2, 0, "")
+		EndIf
+		$iLoaded = 1
+	EndIf
+	Local $hModule = $a_hCall[0]
+	Switch IsNumber($iResType) + 2 * IsNumber($iResName)
+		Case 0
+			$a_hCall = DllCall("kernel32.dll", "hwnd", "FindResourceExW", _
+					"hwnd", $hModule, _
+					"wstr", $iResType, _
+					"wstr", $iResName, _
+					"int", $iResLang)
+		Case 1
+			$a_hCall = DllCall("kernel32.dll", "hwnd", "FindResourceExW", _
+					"hwnd", $hModule, _
+					"int", $iResType, _
+					"wstr", $iResName, _
+					"int", $iResLang)
+		Case 2
+			$a_hCall = DllCall("kernel32.dll", "hwnd", "FindResourceExW", _
+					"hwnd", $hModule, _
+					"wstr", $iResType, _
+					"int", $iResName, _
+					"int", $iResLang)
+		Case 3
+			$a_hCall = DllCall("kernel32.dll", "hwnd", "FindResourceExW", _
+					"hwnd", $hModule, _
+					"int", $iResType, _
+					"int", $iResName, _
+					"int", $iResLang)
+	EndSwitch
+	If @error Or Not $a_hCall[0] Then
+		If $iLoaded Then
+			Local $a_iCall = DllCall("kernel32.dll", "int", "FreeLibrary", "hwnd", $hModule)
+			If @error Or Not $a_iCall[0] Then
+				Return SetError(7, 0, "")
+			EndIf
+		EndIf
+		Return SetError(3, 0, "")
+	EndIf
+	Local $hResource = $a_hCall[0]
+	$a_iCall = DllCall("kernel32.dll", "int", "SizeofResource", "hwnd", $hModule, "hwnd", $hResource)
+	If @error Or Not $a_iCall[0] Then
+		If $iLoaded Then
+			$a_iCall = DllCall("kernel32.dll", "int", "FreeLibrary", "hwnd", $hModule)
+			If @error Or Not $a_iCall[0] Then
+				Return SetError(7, 0, "")
+			EndIf
+		EndIf
+		Return SetError(4, 0, "")
+	EndIf
+	Local $iSizeOfResource = $a_iCall[0]
+	$a_hCall = DllCall("kernel32.dll", "hwnd", "LoadResource", "hwnd", $hModule, "hwnd", $hResource)
+	If @error Or Not $a_hCall[0] Then
+		If $iLoaded Then
+			$a_iCall = DllCall("kernel32.dll", "int", "FreeLibrary", "hwnd", $hModule)
+			If @error Or Not $a_iCall[0] Then
+				Return SetError(7, 0, "")
+			EndIf
+		EndIf
+		Return SetError(5, 0, "")
+	EndIf
+	Local $a_pCall = DllCall("kernel32.dll", "ptr", "LockResource", "hwnd", $a_hCall[0])
+	If @error Or Not $a_pCall[0] Then
+		If $iLoaded Then
+			$a_iCall = DllCall("kernel32.dll", "int", "FreeLibrary", "hwnd", $hModule)
+			If @error Or Not $a_iCall[0] Then
+				Return SetError(7, 0, "")
+			EndIf
+		EndIf
+		Return SetError(6, 0, "")
+	EndIf
+	Local $tOut = DllStructCreate("byte[" & $iSizeOfResource & "]", $a_pCall[0])
+	Local $sReturnData = DllStructGetData($tOut, 1)
+	If $iLoaded Then
+		$a_iCall = DllCall("kernel32.dll", "int", "FreeLibrary", "hwnd", $hModule)
+		If @error Or Not $a_iCall[0] Then
+			Return SetError(7, 0, "")
+		EndIf
+	EndIf
+	Return SetError(0, 0, $sReturnData)
+EndFunc   ;==>_ResourceGetAsRaw
+
+;Unknown author, function found in post here http://www.autoitscript.com/forum/topic/51103-resources-udf/?p=921164
+Func _ResourceGetAsRaw2($sModule, $vResType, $vResName, $iResLang = 0)
+
+    Local $hResDll = _WinAPI_LoadLibraryEx($sModule, $LOAD_LIBRARY_AS_DATAFILE)
+    If @error Then Return SetError(1, 0, 0)
+
+    Local $sTypeType = "wstr"
+    If IsNumber($vResType) Then $sTypeType = "int"
+
+    Local $sNameType = "wstr"
+    If IsNumber($vResName) Then $sNameType = "int"
+
+    Local $aCall = DllCall("kernel32.dll", "handle", "FindResourceExW", _
+            "handle", $hResDll, _
+            $sTypeType, $vResType, _
+            $sNameType, $vResName, _
+            "int", $iResLang)
+    If @error Or Not $aCall[0] Then
+        _WinAPI_FreeLibrary($hResDll)
+        Return SetError(2, 0, 0)
+    EndIf
+
+    Local $hResource = $aCall[0]
+
+    $aCall = DllCall("kernel32.dll", "int", "SizeofResource", "handle", $hResDll, "handle", $hResource)
+    If @error Or Not $aCall[0] Then
+        _WinAPI_FreeLibrary($hResDll)
+        Return SetError(3, 0, 0)
+    EndIf
+
+    Local $iSizeOfResource = $aCall[0]
+
+    $aCall = DllCall("kernel32.dll", "handle", "LoadResource", "handle", $hResDll, "handle", $hResource)
+    If @error Or Not $aCall[0] Then
+        _WinAPI_FreeLibrary($hResDll)
+        Return SetError(4, 0, 0)
+    EndIf
+
+    $hResource = $aCall[0]
+
+    $aCall = DllCall("kernel32.dll", "ptr", "LockResource", "handle", $hResource)
+    If @error Or Not $aCall[0] Then
+        _WinAPI_FreeLibrary($hResDll)
+        Return SetError(5, 0, 0)
+    EndIf
+
+    Local $pResource = $aCall[0]
+
+    Local $tBinary = DllStructCreate("byte[" & $iSizeOfResource & "]", $pResource)
+    Local $bBinary = DllStructGetData($tBinary, 1)
+
+    _WinAPI_FreeLibrary($hResDll)
+
+    Return $bBinary
+
+EndFunc   ;==>_ResourceGetAsRaw
 
 ; #FUNCTION# ====================================================================================================================
 ; Name...........: _TCPConnect
@@ -1060,7 +1321,7 @@ EndFunc   ;==>_Tray_SetHIcon
 
 Func _Quitting()
 	AdlibUnRegister("_ServerCheck")
-	AdlibUnRegister("_CheckForUpdate")
+	AdlibUnRegister(_CheckForUpdateMaster)
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", GUICtrlRead($idSeconds))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", BitAnd(GUICtrlRead($idFlashWin), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", BitAnd(GUICtrlRead($idCountTray), $GUI_CHECKED))
@@ -1174,26 +1435,51 @@ Func _WM_GETMINMAXINFO($hwnd, $Msg, $wParam, $lParam)
     Return 0
 EndFunc   ;==>WM_GETMINMAXINFO
 
+Func _CheckForUpdateMaster()
+	$iCheck = _CheckForUpdate()
+	If $iCheck Then
+		_UpdateHint("Update found, click to open website")
+	ElseIf $iCheck = False Then
+		_UpdateHint("No update found")
+	EndIf
+EndFunc
+
+Func _UpdateHint($sText)
+	_ArrayAdd2($asHint, $sText)
+	$asHint[0] = UBound($asHint) -2
+	AdlibRegister(_HintRemove, 20)
+EndFunc
+
+Func _ArrayAdd2(ByRef $avArray, $vValue)
+	Local $iUBound = UBound($avArray)
+	ReDim $avArray[$iUBound + 1]
+	$avArray[$iUBound] = $vValue
+EndFunc   ;==>_ArrayAdd
+
 Func _CheckForUpdate()
 	Local $asInfo = InetGetInfo($aInet)
-	If $asInfo[1] <> 0 Then GUICtrlSetData($idUpdateLabel, "Checking for update (" & $asInfo[0] / $asInfo[1] * 100 & "%)")
-	If $asInfo[2] <> True Then Return
-	AdlibUnRegister("_CheckForUpdate")
+;~ 	ConsoleWrite(UBound($asInfo) & @LF)
+;~ 	If $asInfo[1] <> 0 Then GUICtrlSetData($idUpdateLabel, "Checking for update (" & $asInfo[0] / $asInfo[1] * 100 & "%)")
+	If $asInfo[2] <> True Then Return Null
+	AdlibUnRegister(_CheckForUpdateMaster)
 	InetClose($aInet)
 	$sFile = FileRead(@TempDir & "\MSPC.txt")
 	FileDelete(@TempDir & "\MSPC.txt")
-	AdlibRegister("_UpdateFailed")
-	If $asInfo[3] <> True Then Return
+;~ 	AdlibRegister("_UpdateFailed")
+	If $asInfo[3] <> True Then Return False
 	$aRet = StringSplit($sFile, "|")
-	If @error Then Return
-	If $aRet[0] <> 2 Then Return
-	If $aRet[1] <= 17 Then Return   ;Version
+	If @error Then Return False
+	If $aRet[0] <> 2 Then Return False
+	If $aRet[1] <= 17 Then Return False   ;Version
 	$sUpdateLink = $aRet[2]
-	GUICtrlSetData($idUpdateLabel, "Update found, click to open website")
-	GUICtrlSetCursor($idUpdateLabel, 0)
+	Return True
+;~ 	GUICtrlSetData($idUpdateLabel, "Update found, click to open website")
+;~ 	GUICtrlSetCursor($idUpdateLabel, 0)
 EndFunc
 
 Func _UpdateFailed()
-	AdlibUnRegister("_UpdateFailed")
-	If GUICtrlRead($idUpdateLabel) <> "Update found, click to open website" Then GUICtrlSetData($idUpdateLabel, "No update")
+;~ 	AdlibUnRegister("_UpdateFailed")
+;~ 	_ArrayAdd($asHint, "No update")
+;~ 	$asHint[0] = UBound($asHint -1)
+;~ 	If GUICtrlRead($idUpdateLabel) <> "Update found, click to open website" Then GUICtrlSetData($idUpdateLabel, "No update")
 EndFunc

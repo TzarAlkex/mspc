@@ -25,3 +25,9 @@ http://www.autoitscript.com/forum/topic/148114-jsmn-a-non-strict-json-udf/
 
 Yashied
 http://www.autoitscript.com/forum/topic/92675-icons-udf/
+
+UEZ
+Load_BMP_From_Mem()
+
+???
+_ResourceGetAsRaw
