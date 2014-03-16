@@ -1,17 +1,18 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Version=Beta
+#AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
 #AutoIt3Wrapper_Res_Description=Alert user when his favorite Minecraft server goes online
 #AutoIt3Wrapper_Res_Fileversion=0.0.0.17
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
-#AutoIt3Wrapper_Run_Obfuscator=y
-#Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
 #AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
 #AutoIt3Wrapper_Res_File_Add=PleaseWait.png, rt_rcdata, AVATAR_WAIT
 #AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
 #AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
+#AutoIt3Wrapper_Run_Obfuscator=y
+#Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #Obfuscator_Ignore_Funcs=_ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished
 
