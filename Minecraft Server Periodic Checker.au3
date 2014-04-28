@@ -5,8 +5,9 @@
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
 #AutoIt3Wrapper_Res_Description=Alert user when his favorite Minecraft server goes online
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.17
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.18
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#AutoIt3Wrapper_Res_File_Add=cog.png, rt_rcdata, SETTINGS
 #AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
 #AutoIt3Wrapper_Res_File_Add=PleaseWait.png, rt_rcdata, AVATAR_WAIT
 #AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
@@ -149,9 +150,16 @@ If $sMinutesBetweenScans <> "IsglassIsTasty" Then
 EndIf
 
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 535, 25, $SS_CENTERIMAGE)
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 515, 25, $SS_CENTERIMAGE)
 
-Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 550, $iGuiY - 35, 85, 25, $BS_PUSHLIKE)
+Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 530, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
+Local $hSettingsImageList = _GUIImageList_Create(32, 32, 5, 3, 1)
+If @Compiled Then
+	Global $iListNew = _ImageList_AddImageFromResource($hSettingsImageList, "SETTINGS")
+Else
+	Global $iListNew = _ImageList_AddImage($hSettingsImageList, @ScriptDir & "\cog.png")
+EndIf
+_GUICtrlButton_SetImageList($cIdSettings, $hSettingsImageList, 0)
 
 $idPopupDummy = GUICtrlCreateDummy()
 
@@ -444,7 +452,7 @@ Func _HintRemove()
 		Else
 			GUICtrlDelete($cIdHints)
 			GUISwitch($hGui)
-			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 535, 25, $SS_CENTERIMAGE)
+			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 515, 25, $SS_CENTERIMAGE)
 		EndIf
 		_HintAdd()
 		AdlibRegister("_HintAdd", 20)
@@ -1298,7 +1306,7 @@ Func _CheckForUpdate()
 	$aRet = StringSplit($sFile, "|")
 	If @error Then Return False
 	If $aRet[0] <> 2 Then Return False
-	If $aRet[1] <= 17 Then Return False   ;Version
+	If $aRet[1] <= 18 Then Return False   ;Version
 
 	$sUpdateLink = $aRet[2]
 	Return True
