@@ -751,8 +751,10 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
-	$sMOTD = StringReplace($sMOTD, "Â", "")
-	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
+	Local $sMOTDClean = StringReplace($sMOTD, "Â", "")
+	Local $sMOTDSterilized = StringRegExpReplace($sMOTDClean, "(§.)", "")
+
+	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTDSterilized)
 
 	Local $iIndex = -1
 	While 1
@@ -779,7 +781,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 						EndIf
 					EndIf
 				EndIf
-				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTD, 4)
+				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTDSterilized, 4)
 
 				_GUICtrlListView_SetColumnWidth($idServers, 2, $LVSCW_AUTOSIZE_USEHEADER)
 				_GUICtrlListView_SetColumnWidth($idServers, 4, $LVSCW_AUTOSIZE_USEHEADER)
@@ -808,7 +810,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 				GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($avPopups[$iX][1], 0), 0xFFFF33)
 			EndIf
 		EndIf
-		_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, $sMOTD, 4)
+		_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, $sMOTDSterilized, 4)
 
 		_GUICtrlListView_SetColumnWidth($avPopups[$iX][1], 2, $LVSCW_AUTOSIZE)
 		_GUICtrlListView_SetColumnWidth($avPopups[$iX][1], 3, $LVSCW_AUTOSIZE)
