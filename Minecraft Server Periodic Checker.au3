@@ -516,14 +516,17 @@ Func _ServerScanner()
 				EndIf
 				$oObj.Log("Connecting to " & $asServers[$iX] & ":" & $asPorts[$iY][0] & " /Socket=" & $iSocket & " /Error=" & @error)
 				If $asPorts[$iY][1] = "Old" Then   ;pre 1.4 protocol
+					$oObj.Log("pre 1.4 protocol")
 					TCPSend($iSocket, Binary("0xFE"))
 				ElseIf $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
+					$oObj.Log("1.7+ protocol")
 					$bTemp = Binary("0x0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01" & "0100"
 					$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
 					$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01"   ;first byte (0x!0E!0004) should be total length
 					$bRequest = "0100"
 					TCPSend($iSocket, $bTemp)
 				Else   ;1.4 - 1.7 protocol
+					$oObj.Log("1.4 - 1.7 protocol")
 					TCPSend($iSocket, Binary("0xFE01"))
 				EndIf
 
@@ -539,11 +542,15 @@ Func _ServerScanner()
 						If $dRet <> "" Then
 
 							If $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
-								$oObj.Log("Online (1.7+ protocol)")
+;~ 								$oObj.Log("Online (1.7+ protocol)")
 
 								Do
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
+
+								$oObj.Log("JSON START")
+								$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
+								$oObj.Log("JSON END")
 
 								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 
@@ -578,13 +585,13 @@ Func _ServerScanner()
 
 								If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
 									If StringReplace($aRet[3], ".", "") >= 170 Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "New")
-									$oObj.Log("Online (1.4 - 1.7 protocol)")
+;~ 									$oObj.Log("Online (1.4 - 1.7 protocol)")
 									$oObj.Results($asServers[$iX], $asPorts[$iY][0], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
 								Else   ;pre 1.4 protocol
 									$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 									If UBound($aRet) = 4 Then
 										If $asPorts[$iY][1] = "True" Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "Old")
-										$oObj.Log("Online (old protocol)")
+;~ 										$oObj.Log("Online (old protocol)")
 										$oObj.Results($asServers[$iX], $asPorts[$iY][0], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
 									Else
 										$oObj.Log("Error")
@@ -677,11 +684,11 @@ Func _SomeObject()
 EndFunc   ;==>_SomeObject
 
 Func _ServerLog($oSelf, $sMessage)
-	ConsoleWrite($sMessage & @LF)
+	_Log($sMessage)
 EndFunc
 
 Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $sPlayer, $nId)
-	ConsoleWrite("_ServerPlayer: " & $sPlayer & "/" & $nId & @LF)
+	_Log("_ServerPlayer: " & $sPlayer & "/" & $nId)
 
 	Local $iUBound = UBound($asServerPlayers)
 	ReDim $asServerPlayers[$iUBound +1][3]
@@ -691,7 +698,7 @@ Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $sPlayer, $nId)
 EndFunc
 
 Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
-	ConsoleWrite("_ServerIcon: " & BinaryLen($dIcon) & @LF)
+	_Log("_ServerIcon: " & BinaryLen($dIcon))
 
 	Local $hBitmap = _GDIPlus_BitmapCreateFromMemory($dIcon)
 	Local $hHBmp = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBitmap)
@@ -704,7 +711,7 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
-	If $iProtocol <> "" And $iProtocol <> "Error" Then ConsoleWrite("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD & @LF)
+	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
 
 	Local $iIndex = -1
 	While 1
@@ -767,7 +774,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 		_GUICtrlListView_SetColumnWidth($avPopups[$iX][1], 4, $LVSCW_AUTOSIZE)
 	Next
 
-	ConsoleWrite("------------------------------" & @LF)
+	_Log("")
 EndFunc
 
 Func _ServerFinished($oSelf)
@@ -1156,6 +1163,17 @@ Func _Tray_SetHIcon($hIcon)
     Return $aRet[0] <> 0
 EndFunc   ;==>_Tray_SetHIcon
 
+Func _Log($sMessage, $iLineNumber = @ScriptLineNumber)
+	Static Local $iExist = FileExists(@ScriptDir & "\Log.txt")
+	Local $sText = StringFormat("%04i", $iLineNumber) & " | " & @HOUR & ":" & @MIN & " " & @SEC & ":" & @MSEC & " | " & $sMessage & @CRLF
+	If $iExist <> 0 Then
+		Static Local $hLog = FileOpen(@ScriptDir & "\Log.txt", $FO_OVERWRITE)
+		FileWrite($hLog, $sText)
+	Else
+		ConsoleWrite($sText)
+	EndIf
+EndFunc
+
 Func _Quitting()
 	AdlibUnRegister("_ServerCheck")
 	AdlibUnRegister("_CheckForUpdateMaster")
@@ -1164,7 +1182,7 @@ Func _Quitting()
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", BitAnd(GUICtrlRead($idCountTray), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", BitAnd(GUICtrlRead($idCheckForUpdate), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", BitAnd(GUICtrlRead($idColorizeListview), $GUI_CHECKED))
-	ConsoleWrite("bye" & @LF)
+	_Log("bye" & @LF)
 EndFunc
 
 ;Thx to Yashied for Code/Idea on how to handle listview checkboxes http://www.autoitscript.com/forum/topic/110391-listview-get-change-in-checking-items/#entry775483
