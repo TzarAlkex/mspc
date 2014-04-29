@@ -1,5 +1,7 @@
 0.0.0.18
 *Improved 1.7 support
+*Added manually setting MC version to server right-click menu
+*Improved the way MOTD is shown
 0.0.0.17
 *Always show player numbers
 *Added support for domain names

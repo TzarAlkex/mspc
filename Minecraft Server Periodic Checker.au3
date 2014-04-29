@@ -751,6 +751,7 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
+	$sMOTD = StringReplace($sMOTD, "Â", "")
 	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
 
 	Local $iIndex = -1
