@@ -123,6 +123,12 @@ $idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/M
 $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
+GUICtrlCreateMenuItem("", $idServerContext)
+GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
+GUICtrlSetState(-1, $GUI_DISABLE)
+Local $idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
+Local $idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
+Local $idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
 
 _IniClean()
 $asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
@@ -324,6 +330,12 @@ While 1
 			_ServerDelete()
 		Case $idServerShowPopup
 			_ServerPopupShow()
+		Case $idServerMenuOld
+			_ServerVersionSet("Old")
+		Case $idServerMenuTrue
+			_ServerVersionSet("True")
+		Case $idServerMenuNew
+			_ServerVersionSet("New")
 		Case $cIdHints
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $cIdSettings
@@ -394,6 +406,24 @@ Func _ServerPopupAdd($sServerAddress, $sPort, $iY)
 
 	$avPopups[UBound($avPopups) -1][2] = DllCallbackRegister("_LabelProc", "int", "hwnd;uint;wparam;lparam")
 	$avPopups[UBound($avPopups) -1][3] = _WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[UBound($avPopups) -1][4]), $GWL_WNDPROC, DllCallbackGetPtr($avPopups[UBound($avPopups) -1][2]))
+EndFunc
+
+Func _ServerVersionSet($sValue)
+	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
+	If $aiListviewSelected[0] = 0 Then
+		MsgBox(48, StringTrimRight(@ScriptName, 4), "No server selected", 0, $hGui)
+		Return
+	EndIf
+
+	Local $sSection, $sKey
+
+	For $iX = $aiListviewSelected[0] To 1 Step -1
+		_GUICtrlListView_SetItemChecked($idServers, $aiListviewSelected[$iX])
+
+		$sSection = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
+		$sKey = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
+		IniWrite(@ScriptDir & "\Servers.ini", $sSection, $sKey, $sValue)
+	Next
 EndFunc
 
 Func _LabelProc($hWnd, $iMsg, $iwParam, $ilParam)
@@ -1192,7 +1222,7 @@ Func _Quitting()
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", BitAnd(GUICtrlRead($idCountTray), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", BitAnd(GUICtrlRead($idCheckForUpdate), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", BitAnd(GUICtrlRead($idColorizeListview), $GUI_CHECKED))
-	_Log("bye" & @LF)
+	_Log("bye")
 EndFunc
 
 ;Thx to Yashied for Code/Idea on how to handle listview checkboxes http://www.autoitscript.com/forum/topic/110391-listview-get-change-in-checking-items/#entry775483
