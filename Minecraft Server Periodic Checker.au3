@@ -567,10 +567,20 @@ Func _ServerScanner()
 								If Jsmn_ObjExists($oPlayers, "sample") Then
 									$oSample = Jsmn_ObjGet($oPlayers, "sample")
 									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
-									For $iZ = 0 To UBound($oSampleKeys) -1
-										$aPlayer = $oSampleKeys[$iZ]
-										$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[2][1], $aPlayer[1][1])
-									Next
+									If UBound($oSampleKeys) >= 1 Then
+										Local $aPlayer = $oSampleKeys[0]
+										If $aPlayer[1][0] = "name" Then
+											For $iZ = 0 To UBound($oSampleKeys) -1
+												$aPlayer = $oSampleKeys[$iZ]
+												$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[1][1], $aPlayer[2][1])
+											Next
+										Else
+											For $iZ = 0 To UBound($oSampleKeys) -1
+												$aPlayer = $oSampleKeys[$iZ]
+												$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[2][1], $aPlayer[1][1])
+											Next
+										EndIf
+									EndIf
 								EndIf
 
 								$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
