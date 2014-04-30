@@ -53,11 +53,11 @@ Opt("GUIResizeMode", $GUI_DOCKALL)
 
 Global $sMyCLSID = "AutoIt.ServerChecker"
 
-Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
-Func _ErrFunc()
-	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
-	Exit
-EndFunc
+;~ Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
+;~ Func _ErrFunc()
+;~ 	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
+;~ 	Exit
+;~ EndFunc
 
 If $CmdLine[0] > 1 And $CmdLine[1] = "/ServerScanner" Then
 	_ServerScanner()
@@ -567,7 +567,7 @@ Func _ServerScanner()
 						Sleep(1500)
 						$dRet = TCPRecv($iSocket, 1500, 1)
 						$error = @error
-						$oObj.Log($error & "/" & $dRet)
+;~ 						$oObj.Log($error & "/" & $dRet)
 ;~ 						$oObj.Log(TimerDiff($iTimeOut))
 						If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
 							TCPCloseSocket($iSocket)
@@ -590,6 +590,8 @@ Func _ServerScanner()
 
 								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 
+								$sDescription = Jsmn_ObjGet($oJSON, "description")
+
 								$oVersion = Jsmn_ObjGet($oJSON, "version")
 								$sVersionName = Jsmn_ObjGet($oVersion, "name")
 								$iVersionProtocol = Jsmn_ObjGet($oVersion, "protocol")
@@ -597,9 +599,6 @@ Func _ServerScanner()
 								$oPlayers = Jsmn_ObjGet($oJSON, "players")
 								$iPlayersMax = Jsmn_ObjGet($oPlayers, "max")
 								$iPlayersOnline = Jsmn_ObjGet($oPlayers, "online")
-
-								$sDescription = Jsmn_ObjGet($oJSON, "description")
-
 								If Jsmn_ObjExists($oPlayers, "sample") Then
 									$oSample = Jsmn_ObjGet($oPlayers, "sample")
 									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
@@ -619,10 +618,36 @@ Func _ServerScanner()
 									EndIf
 								EndIf
 
-								$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
+								Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
+								Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
+								If Jsmn_ObjExists($oModinfo, "modList") Then
+									Local $oModList = Jsmn_ObjGet($oModinfo, "modList")
+									Local $oModListKeys = Jsmn_ObjTo2DArray($oModList)
 
-								$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
-								$oObj.Icon($asServers[$iX], $asPorts[$iY][0], $dPng)
+									Local $aMod = $oModListKeys[0], $asMods[UBound($oModListKeys)][2]
+									If $aMod[1][0] = "modid" Then
+										For $iZ = 0 To UBound($oModListKeys) -1
+											$aMod = $oModListKeys[$iZ]
+;~ 											$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $aMod[1][1], $aMod[2][1])
+											$asMods[$iZ][0] = $aMod[1][1]
+											$asMods[$iZ][1] = $aMod[2][1]
+										Next
+									Else
+										For $iZ = 0 To UBound($oModListKeys) -1
+											$aMod = $oModListKeys[$iZ]
+;~ 											$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $aMod[2][1], $aMod[1][1])
+											$asMods[$iZ][0] = $aMod[2][1]
+											$asMods[$iZ][1] = $aMod[1][1]
+										Next
+									EndIf
+									$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $asMods)
+								EndIf
+
+								If Jsmn_ObjExists($oJSON, "favicon") Then
+									$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
+									$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
+									$oObj.Icon($asServers[$iX], $asPorts[$iY][0], $dPng)
+								EndIf
 
 								$oObj.Results($asServers[$iX], $asPorts[$iY][0], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
 								TCPCloseSocket($iSocket)
@@ -722,6 +747,7 @@ EndFunc   ;==>_B64Decode
 
 Func _SomeObject()
     Local $oClassObject = _AutoItObject_Class()
+    $oClassObject.AddMethod("Mod", "_ServerMod")
     $oClassObject.AddMethod("Log", "_ServerLog")
     $oClassObject.AddMethod("Player", "_ServerPlayer")
 	$oClassObject.AddMethod("Icon", "_ServerIcon")
@@ -729,6 +755,25 @@ Func _SomeObject()
     $oClassObject.AddMethod("Finished", "_ServerFinished")
     Return $oClassObject.Object
 EndFunc   ;==>_SomeObject
+
+Func _ServerMod($oSelf, $sServerAddress, $iServerPort, $sType, $asMods)
+	_Log("_ServerMod: Type " & $sType)
+
+	Local $iLength = 0
+	For $iX = 0 To UBound($asMods) -1
+		If StringLen($asMods[$iX][0]) > $iLength Then $iLength = StringLen($asMods[$iX][0])
+	Next
+;~ 	_Log($iLength)
+
+	For $iX = 0 To UBound($asMods) -1
+		_Log("ModId=" & StringFormat("%-" & $iLength & "s", $asMods[$iX][0]) & " Version=" & $asMods[$iX][1])
+	Next
+EndFunc
+
+;~ Func _ServerModOld($oSelf, $sServerAddress, $iServerPort, $sInfoType, $vModId, $vModVersion)
+;~ 	_Log("_ServerMod: " & $sInfoType)
+;~ 	_Log("VarGetType($vModId): " & VarGetType($vModId) & " / " & "VarGetType($vModVersion): " & VarGetType($vModVersion))
+;~ EndFunc
 
 Func _ServerLog($oSelf, $sMessage)
 	_Log($sMessage)
