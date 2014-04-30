@@ -529,7 +529,7 @@ Func _ServerScanner()
 
 	$iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
 	If $iTimeoutSeconds = 0 Then $iTimeoutSeconds = 10
-	$iTimeoutSeconds *= 1000
+	Local $iTimeoutMS = $iTimeoutSeconds * 1000
 
 	$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
 	If Not @error Then
@@ -540,9 +540,9 @@ Func _ServerScanner()
 			For $iY = 1 To $asPorts[0][0]
 				If $asPorts[$iY][1] = "False" Then ContinueLoop
 				If StringIsDigit(StringReplace($asServers[$iX], ".", "")) Then
-					$iSocket = _TCPConnect($asServers[$iX], $asPorts[$iY][0], $iTimeoutSeconds)
+					$iSocket = _TCPConnect($asServers[$iX], $asPorts[$iY][0], $iTimeoutMS)
 				Else
-					$iSocket = _TCPConnect(TCPNameToIP($asServers[$iX]), $asPorts[$iY][0], $iTimeoutSeconds)
+					$iSocket = _TCPConnect(TCPNameToIP($asServers[$iX]), $asPorts[$iY][0], $iTimeoutMS)
 				EndIf
 				$oObj.Log("Connecting to " & $asServers[$iX] & ":" & $asPorts[$iY][0] & " /Socket=" & $iSocket & " /Error=" & @error)
 				If $asPorts[$iY][1] = "Old" Then   ;pre 1.4 protocol
@@ -560,11 +560,16 @@ Func _ServerScanner()
 					TCPSend($iSocket, Binary("0xFE01"))
 				EndIf
 
+				Local $iTimeOut = TimerInit()
+
 				While 1
 					While 1
 						Sleep(1500)
 						$dRet = TCPRecv($iSocket, 1500, 1)
-						If @error Then
+						$error = @error
+						$oObj.Log($error & "/" & $dRet)
+;~ 						$oObj.Log(TimerDiff($iTimeOut))
+						If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
 							TCPCloseSocket($iSocket)
 							ExitLoop
 						EndIf
@@ -575,6 +580,7 @@ Func _ServerScanner()
 ;~ 								$oObj.Log("Online (1.7+ protocol)")
 
 								Do
+									Sleep(1500)
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
 
@@ -619,6 +625,7 @@ Func _ServerScanner()
 								$oObj.Icon($asServers[$iX], $asPorts[$iY][0], $dPng)
 
 								$oObj.Results($asServers[$iX], $asPorts[$iY][0], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
+								TCPCloseSocket($iSocket)
 								ExitLoop 2
 							Else   ;Pre 1.7 protocols
 								$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
