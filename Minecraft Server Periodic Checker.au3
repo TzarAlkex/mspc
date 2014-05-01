@@ -53,11 +53,11 @@ Opt("GUIResizeMode", $GUI_DOCKALL)
 
 Global $sMyCLSID = "AutoIt.ServerChecker"
 
-;~ Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
-;~ Func _ErrFunc()
-;~ 	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
-;~ 	Exit
-;~ EndFunc
+Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
+Func _ErrFunc()
+	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
+	Exit
+EndFunc
 
 If $CmdLine[0] > 1 And $CmdLine[1] = "/ServerScanner" Then
 	_ServerScanner()
@@ -567,8 +567,6 @@ Func _ServerScanner()
 						Sleep(1500)
 						$dRet = TCPRecv($iSocket, 1500, 1)
 						$error = @error
-;~ 						$oObj.Log($error & "/" & $dRet)
-;~ 						$oObj.Log(TimerDiff($iTimeOut))
 						If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
 							TCPCloseSocket($iSocket)
 							ExitLoop
@@ -577,7 +575,6 @@ Func _ServerScanner()
 						If $dRet <> "" Then
 
 							If $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
-;~ 								$oObj.Log("Online (1.7+ protocol)")
 
 								Do
 									Sleep(1500)
@@ -603,24 +600,28 @@ Func _ServerScanner()
 									$oSample = Jsmn_ObjGet($oPlayers, "sample")
 									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
 									If UBound($oSampleKeys) >= 1 Then
-										Local $aPlayer = $oSampleKeys[0]
+										Local $aPlayer = $oSampleKeys[0], $asPlayers[UBound($oSampleKeys)][2]
 										If $aPlayer[1][0] = "name" Then
 											For $iZ = 0 To UBound($oSampleKeys) -1
 												$aPlayer = $oSampleKeys[$iZ]
-												$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[1][1], $aPlayer[2][1])
+												$asPlayers[$iZ][0] = $aPlayer[1][1]
+												$asPlayers[$iZ][1] = $aPlayer[2][1]
 											Next
 										Else
 											For $iZ = 0 To UBound($oSampleKeys) -1
 												$aPlayer = $oSampleKeys[$iZ]
-												$oObj.Player($asServers[$iX], $asPorts[$iY][0], $aPlayer[2][1], $aPlayer[1][1])
+												$asPlayers[$iZ][0] = $aPlayer[2][1]
+												$asPlayers[$iZ][1] = $aPlayer[1][1]
 											Next
 										EndIf
+										$oObj.Player($asServers[$iX], $asPorts[$iY][0], $asPlayers)
 									EndIf
 								EndIf
 
-								Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
-								Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
-								If Jsmn_ObjExists($oModinfo, "modList") Then
+								If Jsmn_ObjExists($oJSON, "modinfo") Then
+									Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
+									Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
+
 									Local $oModList = Jsmn_ObjGet($oModinfo, "modList")
 									Local $oModListKeys = Jsmn_ObjTo2DArray($oModList)
 
@@ -628,14 +629,12 @@ Func _ServerScanner()
 									If $aMod[1][0] = "modid" Then
 										For $iZ = 0 To UBound($oModListKeys) -1
 											$aMod = $oModListKeys[$iZ]
-;~ 											$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $aMod[1][1], $aMod[2][1])
 											$asMods[$iZ][0] = $aMod[1][1]
 											$asMods[$iZ][1] = $aMod[2][1]
 										Next
 									Else
 										For $iZ = 0 To UBound($oModListKeys) -1
 											$aMod = $oModListKeys[$iZ]
-;~ 											$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $aMod[2][1], $aMod[1][1])
 											$asMods[$iZ][0] = $aMod[2][1]
 											$asMods[$iZ][1] = $aMod[1][1]
 										Next
@@ -657,13 +656,11 @@ Func _ServerScanner()
 
 								If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
 									If StringReplace($aRet[3], ".", "") >= 170 Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "New")
-;~ 									$oObj.Log("Online (1.4 - 1.7 protocol)")
 									$oObj.Results($asServers[$iX], $asPorts[$iY][0], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
 								Else   ;pre 1.4 protocol
 									$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 									If UBound($aRet) = 4 Then
 										If $asPorts[$iY][1] = "True" Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "Old")
-;~ 										$oObj.Log("Online (old protocol)")
 										$oObj.Results($asServers[$iX], $asPorts[$iY][0], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
 									Else
 										$oObj.Log("Error")
@@ -763,30 +760,31 @@ Func _ServerMod($oSelf, $sServerAddress, $iServerPort, $sType, $asMods)
 	For $iX = 0 To UBound($asMods) -1
 		If StringLen($asMods[$iX][0]) > $iLength Then $iLength = StringLen($asMods[$iX][0])
 	Next
-;~ 	_Log($iLength)
 
 	For $iX = 0 To UBound($asMods) -1
 		_Log("ModId=" & StringFormat("%-" & $iLength & "s", $asMods[$iX][0]) & " Version=" & $asMods[$iX][1])
 	Next
 EndFunc
 
-;~ Func _ServerModOld($oSelf, $sServerAddress, $iServerPort, $sInfoType, $vModId, $vModVersion)
-;~ 	_Log("_ServerMod: " & $sInfoType)
-;~ 	_Log("VarGetType($vModId): " & VarGetType($vModId) & " / " & "VarGetType($vModVersion): " & VarGetType($vModVersion))
-;~ EndFunc
-
 Func _ServerLog($oSelf, $sMessage)
 	_Log($sMessage)
 EndFunc
 
-Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $sPlayer, $nId)
-	_Log("_ServerPlayer: " & $sPlayer & "/" & $nId)
-
+Func _ServerPlayer($oSelf, $sServerAddress, $iServerPort, $asPlayers)
 	Local $iUBound = UBound($asServerPlayers)
-	ReDim $asServerPlayers[$iUBound +1][3]
-	$asServerPlayers[$iUBound][0] = $sServerAddress & ":" & $iServerPort
-	$asServerPlayers[$iUBound][1] = $sPlayer
-	$asServerPlayers[$iUBound][2] = $nId
+	ReDim $asServerPlayers[$iUBound + UBound($asPlayers)][3]
+
+	Local $iLength = 0
+	For $iX = 0 To UBound($asPlayers) -1
+		If StringLen($asPlayers[$iX][0]) > $iLength Then $iLength = StringLen($asPlayers[$iX][0])
+	Next
+
+	For $iX = 0 To UBound($asPlayers) -1
+		_Log("Name=" & StringFormat("%-" & $iLength & "s", $asPlayers[$iX][0]) & " ID=" & $asPlayers[$iX][1])
+		$asServerPlayers[$iUBound - 1 + $iX][0] = $sServerAddress & ":" & $iServerPort
+		$asServerPlayers[$iUBound - 1 + $iX][1] = $asPlayers[$iX][0]
+		$asServerPlayers[$iUBound - 1 + $iX][2] = $asPlayers[$iX][1]
+	Next
 EndFunc
 
 Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
@@ -1259,11 +1257,10 @@ Func _Tray_SetHIcon($hIcon)
 EndFunc   ;==>_Tray_SetHIcon
 
 Func _Log($sMessage, $iLineNumber = @ScriptLineNumber)
-	Static Local $iExist = FileExists(@ScriptDir & "\Log.txt")
 	Local $sText = StringFormat("%04i", $iLineNumber) & " | " & @HOUR & ":" & @MIN & " " & @SEC & ":" & @MSEC & " | " & $sMessage & @CRLF
-	If $iExist <> 0 Then
+	If @Compiled Then
 		Static Local $hLog = FileOpen(@ScriptDir & "\Log.txt", $FO_OVERWRITE)
-		FileWrite($hLog, $sText)
+		If $hLog <> -1 Then FileWrite($hLog, $sText)
 	Else
 		ConsoleWrite($sText)
 	EndIf
