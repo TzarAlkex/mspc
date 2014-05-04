@@ -1017,6 +1017,16 @@ Func _DownloadPlayerImages()
 	EndIf
 EndFunc
 
+Func _NaughtyList($sName)
+	Local $asList[] = ["Pc_Girl"]
+
+	For $iX = 0 To UBound($asList) -1
+		If $asList[$iX] = $sName Then Return 1
+	Next
+
+	Return 0
+EndFunc
+
 ;==================================================================================================================================
 ; Author ........: AdmiralAlkex
 ; Modified.......:
