@@ -119,7 +119,7 @@ $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 GUICtrlCreateGroup("Scan", 390, 5, 245, 70)
 $idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
 
-$idServers = GUICtrlCreateListView("Server Address|Server Port|Version|Current/Max Players|MOTD", 5, 80, 630, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
+$idServers = GUICtrlCreateListView("Server Address|Port|Version|Players|MOTD", 5, 80, 630, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
@@ -577,7 +577,7 @@ Func _ServerScanner()
 							If $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
 
 								Do
-									Sleep(1500)
+									Sleep(500)
 									$dRet &= TCPRecv($iSocket, 1500, 1)
 								Until @error <> 0
 
@@ -672,7 +672,7 @@ Func _ServerScanner()
 								ExitLoop 2
 							EndIf
 						EndIf
-						Sleep(100)
+;~ 						Sleep(100)
 					WEnd
 
 					$oObj.Log("Offline")
@@ -801,10 +801,11 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
-	Local $sMOTDClean = StringReplace($sMOTD, "Â", "")
-	Local $sMOTDSterilized = StringRegExpReplace($sMOTDClean, "(§.)", "")
+;~ 	Local $sMOTDClean = StringReplace($sMOTD, "Â", "")
+;~ 	Local $sMOTDSterilized = StringRegExpReplace($sMOTDClean, "(§.)", "")
+	_MCStringClean($sMOTD)
 
-	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTDSterilized)
+	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
 
 	Local $iIndex = -1
 	While 1
@@ -831,7 +832,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 						EndIf
 					EndIf
 				EndIf
-				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTDSterilized, 4)
+				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTD, 4)
 
 				_GUICtrlListView_SetColumnWidth($idServers, 2, $LVSCW_AUTOSIZE_USEHEADER)
 				_GUICtrlListView_SetColumnWidth($idServers, 4, $LVSCW_AUTOSIZE_USEHEADER)
@@ -860,7 +861,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 				GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($avPopups[$iX][1], 0), 0xFFFF33)
 			EndIf
 		EndIf
-		_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, $sMOTDSterilized, 4)
+		_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, $sMOTD, 4)
 
 		_GUICtrlListView_SetColumnWidth($avPopups[$iX][1], 2, $LVSCW_AUTOSIZE)
 		_GUICtrlListView_SetColumnWidth($avPopups[$iX][1], 3, $LVSCW_AUTOSIZE)
@@ -878,6 +879,11 @@ Func _ServerFinished($oSelf)
 	AdlibRegister("_ServerCheck", GUICtrlRead($idSeconds) * 1000)
 	GUICtrlSetData($idScanNow, "Scan now")
 	GUICtrlSetState($idScanNow, $GUI_ENABLE)
+EndFunc
+
+Func _MCStringClean(ByRef $sText, $dKeepColors = False)
+	$sText = StringReplace($sText, "Â", "")
+	If Not $dKeepColors Then $sText = StringRegExpReplace($sText, "(§.)", "")
 EndFunc
 
 #region
