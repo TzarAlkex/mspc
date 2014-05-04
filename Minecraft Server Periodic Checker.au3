@@ -282,6 +282,10 @@ _AutoItObject_StartUp()
 Global $oObject = _SomeObject()
 Global $hObj = _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItPID)
 
+If IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "MyVeryRandomString") = "MyVeryRandomString" Then
+	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
+EndIf
+
 _AvatarsDelete()
 AdlibRegister("_ServerCheck")
 
@@ -1293,12 +1297,29 @@ EndFunc   ;==>_Tray_SetHIcon
 
 Func _Log($sMessage, $iLineNumber = @ScriptLineNumber)
 	Local $sText = StringFormat("%04i", $iLineNumber) & " | " & @HOUR & ":" & @MIN & " " & @SEC & ":" & @MSEC & " | " & $sMessage & @CRLF
-	If @Compiled Then
+	Static Local $vFunc = @Compiled ? _LogFile : _LogConsole
+	$vFunc($sText)
+;~ 	If @Compiled Then
+;~ 		Static Local $sLoggingLevel = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
+;~ 		If $sLoggingLevel <> "Unknown" Then
+;~ 			Static Local $hLog = FileOpen(@ScriptDir & "\Log.txt", $FO_OVERWRITE)
+;~ 			If $hLog <> -1 Then FileWrite($hLog, $sText)
+;~ 		EndIf
+;~ 	Else
+;~ 		ConsoleWrite($sText)
+;~ 	EndIf
+EndFunc
+
+Func _LogFile($sText)
+	Static Local $sLoggingLevel = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
+	If $sLoggingLevel <> "Unknown" Then
 		Static Local $hLog = FileOpen(@ScriptDir & "\Log.txt", $FO_OVERWRITE)
 		If $hLog <> -1 Then FileWrite($hLog, $sText)
-	Else
-		ConsoleWrite($sText)
 	EndIf
+EndFunc
+
+Func _LogConsole($sText)
+	ConsoleWrite($sText)
 EndFunc
 
 Func _Quitting()
