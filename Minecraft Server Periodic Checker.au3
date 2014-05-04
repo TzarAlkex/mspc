@@ -882,8 +882,17 @@ Func _ServerFinished($oSelf)
 EndFunc
 
 Func _MCStringClean(ByRef $sText, $dKeepColors = False)
+	Local $iReplacements = 0
+
 	$sText = StringReplace($sText, "Â", "")
-	If Not $dKeepColors Then $sText = StringRegExpReplace($sText, "(§.)", "")
+	$iReplacements += @extended
+
+	If Not $dKeepColors Then
+		$sText = StringRegExpReplace($sText, "(§.)", "")
+		$iReplacements += @extended
+	EndIf
+
+	Return $iReplacements
 EndFunc
 
 #region
@@ -914,18 +923,18 @@ Func _ServerInfoShow($iIndex)
 		EndIf
 	EndIf
 
-	Local $iSetViewDetails = False
+	Local $iSetViewDetails = False, $iNeedDetails = 0, $sCleanName = ""
 	For $iX = 0 To UBound($asServerPlayers) -1
 		If $asServerPlayers[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
 
-		If $asServerPlayers[$iX][1] <> "" Then
-			_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][1], $iListNew)
-		Else
-			_GUICtrlListView_AddItem($idServerPlayers, $asServerPlayers[$iX][2], $iListNew)
-			$iSetViewDetails = True
-		EndIf
+		$sCleanName = $asServerPlayers[$iX][1]
+		If _MCStringClean($sCleanName) > 0 Then $iNeedDetails += 1
+
+		_GUICtrlListView_AddItem($idServerPlayers, $sCleanName, $iListNew)
 	Next
-	If $iSetViewDetails Then
+;~ 	ConsoleWrite(UBound($asServerPlayers) -1 & @LF)
+;~ 	ConsoleWrite($iNeedDetails & @LF)
+	If $iNeedDetails > _GUICtrlListView_GetItemCount($idServerPlayers) -1 Then
 		_GUICtrlListView_SetView($idServerPlayers, 0)
 		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
 	Else
@@ -937,16 +946,22 @@ EndFunc
 Func _DownloadPlayerImages()
 	AdlibUnRegister("_DownloadPlayerImages")
 	Local $iTimeOut = TimerInit()
-	For $iX = 0 To _GUICtrlListView_GetItemCount($idServerPlayers) -1
+	Local $iCount = _GUICtrlListView_GetItemCount($idServerPlayers) -1
+	For $iX = 0 To $iCount
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) <> 0 Then ContinueLoop
 
 		$sFileName = _GUICtrlListView_GetItemText($idServerPlayers, $iX)
+		If $sFileName = "" Then
+			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
+			ContinueLoop
+		EndIf
+
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
 		$sFileNameTEMP = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".tmp"
 
 		If FileExists($sFileNameHEAD) Then
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
-			AdlibRegister("_DownloadPlayerImages")
+;~ 			AdlibRegister("_DownloadPlayerImages")
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
@@ -978,10 +993,24 @@ Func _DownloadPlayerImages()
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			EndIf
 
-			AdlibRegister("_DownloadPlayerImages")
+;~ 			AdlibRegister("_DownloadPlayerImages")
 		EndIf
-		If TimerDiff($iTimeOut) > 100 Then ExitLoop
+		If TimerDiff($iTimeOut) > 100 Then
+			AdlibRegister("_DownloadPlayerImages")
+			Return
+		EndIf
 	Next
+
+	Local $iNeedDetails = 0;$iSetViewDetails = False,
+	For $iX = 0 To $iCount
+		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) = $iListDefault Then $iNeedDetails += 1
+	Next
+;~ 	ConsoleWrite($iCount & @LF)
+;~ 	ConsoleWrite($iNeedDetails & @LF)
+	If $iNeedDetails > $iCount Then
+		_GUICtrlListView_SetView($idServerPlayers, 0)
+		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
+	EndIf
 EndFunc
 
 ;==================================================================================================================================
