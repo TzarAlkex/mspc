@@ -17,7 +17,7 @@
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#Obfuscator_Ignore_Funcs=_ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished
+#Obfuscator_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide
 
 #cs ----------------------------------------------------------------------------
 
@@ -959,7 +959,7 @@ Func _ServerInfoShow($iIndex)
 
 		_GUICtrlListView_AddItem($idServerPlayers, $sCleanName, $iListNew)
 	Next
-	_GUICtrlListView_AddItem($idServerPlayers, "Pc_Girl", $iListNew)
+;~ 	_GUICtrlListView_AddItem($idServerPlayers, "Pc_Girl", $iListNew)
 ;~ 	ConsoleWrite(UBound($asServerPlayers) -1 & @LF)
 ;~ 	ConsoleWrite($iNeedDetails & @LF)
 	If $iNeedDetails > _GUICtrlListView_GetItemCount($idServerPlayers) -1 Then
@@ -1372,8 +1372,8 @@ Func _Quitting()
 	_Log("bye")
 EndFunc
 
-Func _AdlibNaughtyList()
-	AdlibUnRegister(_AdlibNaughtyList)
+Func _AdlibNaughtyCatShow()
+	AdlibUnRegister(_AdlibNaughtyCatShow)
 ;~ 	ConsoleWrite("test" & @LF)
 
 ;~ 	Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
@@ -1390,11 +1390,11 @@ Func _AdlibNaughtyList()
 ;~ 	EndIf
 
 	GUISetState(@SW_SHOW, $hNaughtyCatGui)
-	AdlibRegister(_AdlibNaughtyProcessor, 5000)
+	AdlibRegister(_AdlibNaughtyCatHide, 5000)
 EndFunc
 
-Func _AdlibNaughtyProcessor()
-	AdlibUnRegister(_AdlibNaughtyProcessor)
+Func _AdlibNaughtyCatHide()
+	AdlibUnRegister(_AdlibNaughtyCatHide)
 ;~ 	GUIDelete()
 	GUISetState(@SW_HIDE, $hNaughtyCatGui)
 EndFunc
@@ -1453,7 +1453,7 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 ;~ 					ConsoleWrite("Hover detected " & Random() & @LF)
 				Case $LVN_HOTTRACK
 ;~ 					ConsoleWrite("HotTrack detected " & Random() & @LF)
-					AdlibUnRegister(_AdlibNaughtyList)
+					AdlibUnRegister(_AdlibNaughtyCatShow)
 					$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
 					$iIndex = DllStructGetData($tInfo, "Item")
 					If $iIndex = -1 Then Return $GUI_RUNDEFMSG
@@ -1461,7 +1461,7 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 ;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "Item") & @LF)
 ;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "SubItem") & @LF)
 ;~ 					ConsoleWrite(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item")) & @LF)
-					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyList, 2000)
+					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyCatShow, 2000)
 			EndSwitch
 	EndSwitch
 	Return $GUI_RUNDEFMSG
