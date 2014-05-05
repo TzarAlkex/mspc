@@ -187,7 +187,7 @@ $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 8
 GUICtrlSetState(-1, $GUI_HIDE)
 
 $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
-_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE)
+_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE, $LVS_EX_ONECLICKACTIVATE)
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 If @Compiled Then
 	Global $iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
