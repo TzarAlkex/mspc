@@ -6,6 +6,7 @@
 *Rewrote File Logging and made it optional
 *GUI work
 *Added Pc_Girl to naughty list
+*Added surprise for members of naughty list
 0.0.0.17
 *Always show player numbers
 *Added support for domain names
