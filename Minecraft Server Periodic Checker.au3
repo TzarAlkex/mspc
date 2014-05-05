@@ -118,10 +118,10 @@ GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
 $idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 
 
-GUICtrlCreateGroup("Scan", 390, 5, 245, 70)
+GUICtrlCreateGroup("Scan", 390, 5, 215, 70)
 $idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
 
-$idServers = GUICtrlCreateListView("Server Address|Port|Version|Players|MOTD", 5, 80, 630, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
+$idServers = GUICtrlCreateListView("Server Address|Port|Version|Players|MOTD", 5, 80, 600, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 $idServerContext = GUICtrlCreateContextMenu($idServers)
 $idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
@@ -158,9 +158,9 @@ If $sMinutesBetweenScans <> "IsglassIsTasty" Then
 EndIf
 
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 515, 25, $SS_CENTERIMAGE)
+Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
 
-Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 530, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
+Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 500, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
 Local $hSettingsImageList = _GUIImageList_Create(32, 32, 5, 3, 1)
 If @Compiled Then
 	Global $iListNew = _ImageList_AddImageFromResource($hSettingsImageList, "SETTINGS")
@@ -172,9 +172,9 @@ _GUICtrlButton_SetImageList($cIdSettings, $hSettingsImageList, 0)
 $idPopupDummy = GUICtrlCreateDummy()
 
 
-GUICtrlCreateGroup("1.7+ only", 645, 5, 177, $iGuiY - 15)
+GUICtrlCreateGroup("1.7+ only", 615, 5, 207, $iGuiY - 15)
 
-$idServerImage = GUICtrlCreatePic("", 655, 25, 64, 64)
+$idServerImage = GUICtrlCreatePic("", 625, 25, 64, 64)
 If @Compiled Then
 	Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "SERVER_DEFAULT")), True)
 	_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
@@ -186,7 +186,7 @@ EndIf
 $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
 GUICtrlSetState(-1, $GUI_HIDE)
 
-$idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+$idServerPlayers = GUICtrlCreateListView("Name", 625, 95, $iGuiX - 645, $iGuiY - 115, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
 _GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE, $LVS_EX_ONECLICKACTIVATE)
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 If @Compiled Then
@@ -207,6 +207,7 @@ _GUICtrlListView_SetView($idServerPlayers, 1)
 ;~ ConsoleWrite(_GUICtrlListView_GetHoverTime($idServerPlayers) & @LF)
 
 $idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
+;~ GUICtrlSetState(-1, $GUI_HIDE)
 
 
 Local $asSettingsSize[] = [200, 235]
@@ -509,7 +510,7 @@ Func _HintRemove()
 		Else
 			GUICtrlDelete($cIdHints)
 			GUISwitch($hGui)
-			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 515, 25, $SS_CENTERIMAGE)
+			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
 		EndIf
 		_HintAdd()
 		AdlibRegister("_HintAdd", 20)
