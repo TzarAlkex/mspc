@@ -203,11 +203,9 @@ EndIf
 Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
-;~ _GUICtrlListView_SetHoverTime($idServerPlayers, 5000)
-;~ ConsoleWrite(_GUICtrlListView_GetHoverTime($idServerPlayers) & @LF)
 
 $idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
-;~ GUICtrlSetState(-1, $GUI_HIDE)
+GUICtrlSetState(-1, $GUI_HIDE)
 
 
 Local $asSettingsSize[] = [200, 235]
@@ -700,7 +698,6 @@ Func _ServerScanner()
 								ExitLoop 2
 							EndIf
 						EndIf
-;~ 						Sleep(100)
 					WEnd
 
 					$oObj.Log("Offline")
@@ -829,8 +826,6 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 EndFunc
 
 Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
-;~ 	Local $sMOTDClean = StringReplace($sMOTD, "Â", "")
-;~ 	Local $sMOTDSterilized = StringRegExpReplace($sMOTDClean, "(§.)", "")
 	_MCStringClean($sMOTD)
 
 	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
@@ -960,9 +955,6 @@ Func _ServerInfoShow($iIndex)
 
 		_GUICtrlListView_AddItem($idServerPlayers, $sCleanName, $iListNew)
 	Next
-;~ 	_GUICtrlListView_AddItem($idServerPlayers, "Pc_Girl", $iListNew)
-;~ 	ConsoleWrite(UBound($asServerPlayers) -1 & @LF)
-;~ 	ConsoleWrite($iNeedDetails & @LF)
 	If $iNeedDetails > _GUICtrlListView_GetItemCount($idServerPlayers) -1 Then
 		_GUICtrlListView_SetView($idServerPlayers, 0)
 		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
@@ -974,6 +966,7 @@ EndFunc
 
 Func _DownloadPlayerImages()
 	AdlibUnRegister("_DownloadPlayerImages")
+
 	Local $iTimeOut = TimerInit()
 	Local $iCount = _GUICtrlListView_GetItemCount($idServerPlayers) -1
 	For $iX = 0 To $iCount
@@ -985,17 +978,11 @@ Func _DownloadPlayerImages()
 			ContinueLoop
 		EndIf
 
-;~ 		If _NaughtyList($sFileName) Then
-;~ 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListNaughty)
-;~ 			ContinueLoop
-;~ 		EndIf
-
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
 		$sFileNameTEMP = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".tmp"
 
 		If FileExists($sFileNameHEAD) Then
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
-;~ 			AdlibRegister("_DownloadPlayerImages")
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
@@ -1026,8 +1013,6 @@ Func _DownloadPlayerImages()
 
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
 			EndIf
-
-;~ 			AdlibRegister("_DownloadPlayerImages")
 		EndIf
 		If TimerDiff($iTimeOut) > 100 Then
 			AdlibRegister("_DownloadPlayerImages")
@@ -1035,12 +1020,11 @@ Func _DownloadPlayerImages()
 		EndIf
 	Next
 
-	Local $iNeedDetails = 0;$iSetViewDetails = False,
+	Local $iNeedDetails = 0
 	For $iX = 0 To $iCount
 		If _GUICtrlListView_GetItemImage($idServerPlayers, $iX) = $iListDefault Then $iNeedDetails += 1
 	Next
-;~ 	ConsoleWrite($iCount & @LF)
-;~ 	ConsoleWrite($iNeedDetails & @LF)
+
 	If $iNeedDetails > $iCount Then
 		_GUICtrlListView_SetView($idServerPlayers, 0)
 		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
@@ -1339,15 +1323,6 @@ Func _Log($sMessage, $iLineNumber = @ScriptLineNumber)
 	Local $sText = StringFormat("%04i", $iLineNumber) & " | " & @HOUR & ":" & @MIN & " " & @SEC & ":" & @MSEC & " | " & $sMessage & @CRLF
 	Static Local $vFunc = @Compiled ? _LogFile : _LogConsole
 	$vFunc($sText)
-;~ 	If @Compiled Then
-;~ 		Static Local $sLoggingLevel = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
-;~ 		If $sLoggingLevel <> "Unknown" Then
-;~ 			Static Local $hLog = FileOpen(@ScriptDir & "\Log.txt", $FO_OVERWRITE)
-;~ 			If $hLog <> -1 Then FileWrite($hLog, $sText)
-;~ 		EndIf
-;~ 	Else
-;~ 		ConsoleWrite($sText)
-;~ 	EndIf
 EndFunc
 
 Func _LogFile($sText)
@@ -1375,20 +1350,6 @@ EndFunc
 
 Func _AdlibNaughtyCatShow()
 	AdlibUnRegister(_AdlibNaughtyCatShow)
-;~ 	ConsoleWrite("test" & @LF)
-
-;~ 	Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
-
-;~ 	GUICreate("Naughty - " & StringTrimRight(@ScriptName, 4), $iNaughtyCatX, $iNaughtyCatY, $iGuiX / 2 - $iNaughtyCatX / 2, $iGuiY / 2 - $iNaughtyCatY / 2, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
-
-;~ 	GUICtrlCreatePic("", 0, 0, $iNaughtyCatX, $iNaughtyCatY)
-;~ 	If @Compiled Then
-;~ 		Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "NAUGHTY_CAT")), True)
-;~ 		_WinAPI_DeleteObject(GUICtrlSendMsg(-1, 0x0172, 0, $hBmp))
-;~ 		_WinAPI_DeleteObject($hBmp)
-;~ 	Else
-;~ 		GUICtrlSetImage(-1, @ScriptDir & "\svartnos_tunga.jpg")
-;~ 	EndIf
 
 	GUISetState(@SW_SHOW, $hNaughtyCatGui)
 	AdlibRegister(_AdlibNaughtyCatHide, 5000)
@@ -1396,7 +1357,6 @@ EndFunc
 
 Func _AdlibNaughtyCatHide()
 	AdlibUnRegister(_AdlibNaughtyCatHide)
-;~ 	GUIDelete()
 	GUISetState(@SW_HIDE, $hNaughtyCatGui)
 EndFunc
 
@@ -1410,8 +1370,6 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 	$tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
 	$iIDFrom = DllStructGetData($tNMHDR, "IDFrom")
 	$iCode = DllStructGetData($tNMHDR, "Code")
-
-;~ 	If $iIDFrom <> $idServers Then Return $GUI_RUNDEFMSG
 
 	Switch $iIDFrom
 		Case $idServers
@@ -1450,18 +1408,11 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 			EndSwitch
 		Case $idServerPlayers
 			Switch $iCode
-;~ 				Case $NM_HOVER
-;~ 					ConsoleWrite("Hover detected " & Random() & @LF)
 				Case $LVN_HOTTRACK
-;~ 					ConsoleWrite("HotTrack detected " & Random() & @LF)
 					AdlibUnRegister(_AdlibNaughtyCatShow)
 					$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
 					$iIndex = DllStructGetData($tInfo, "Item")
 					If $iIndex = -1 Then Return $GUI_RUNDEFMSG
-;~ 					ListView_HOTTRACK(DllStructGetData($tInfo, "SubItem"))
-;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "Item") & @LF)
-;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "SubItem") & @LF)
-;~ 					ConsoleWrite(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item")) & @LF)
 					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyCatShow, 2000)
 			EndSwitch
 	EndSwitch
