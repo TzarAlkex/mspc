@@ -5,8 +5,8 @@
 *Implemented Forge mods and versions parsing (MC 1.7+ only) (NOTE: No place in GUI for these yet!!)
 *Rewrote File Logging and made it optional
 *GUI work
-*Added Pc_Girl to naughty list
-*Added surprise for members of naughty list
+*Created naughty list and put Pc_Girl in it
+*Added surprise for member(s) of naughty list
 0.0.0.17
 *Always show player numbers
 *Added support for domain names

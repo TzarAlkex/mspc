@@ -28,3 +28,6 @@ http://www.autoitscript.com/forum/topic/92675-icons-udf/
 
 ???
 _ResourceGetAsRaw
+
+GaryFrost
+http://www.autoitscript.com/forum/topic/41345-hover-detection-with-listview-is-it-posiible/?p=307598

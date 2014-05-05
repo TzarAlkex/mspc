@@ -13,6 +13,7 @@
 #AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
 #AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
 #AutoIt3Wrapper_Res_File_Add=Naughty.png, rt_rcdata, AVATAR_NAUGHTY
+#AutoIt3Wrapper_Res_File_Add=svartnos_tunga.jpg, rt_rcdata, NAUGHTY_CAT
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -186,6 +187,7 @@ $idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 8
 GUICtrlSetState(-1, $GUI_HIDE)
 
 $idServerPlayers = GUICtrlCreateListView("Name", 655, 95, $iGuiX - 675, $iGuiY - 150, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE)
 Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 If @Compiled Then
 	Global $iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
@@ -201,6 +203,8 @@ EndIf
 Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
 _GUICtrlListView_SetView($idServerPlayers, 1)
+;~ _GUICtrlListView_SetHoverTime($idServerPlayers, 5000)
+;~ ConsoleWrite(_GUICtrlListView_GetHoverTime($idServerPlayers) & @LF)
 
 $idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
 
@@ -272,6 +276,20 @@ If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(0xF6) & "ttbullarIsTas
 	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
 	AdlibRegister("_CheckForUpdateMaster", 100)
 	$asHint[0] = -1
+EndIf
+
+
+Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
+
+Global $hNaughtyCatGui = GUICreate("Naughty - " & StringTrimRight(@ScriptName, 4), $iNaughtyCatX, $iNaughtyCatY, $iGuiX / 2 - $iNaughtyCatX / 2, $iGuiY / 2 - $iNaughtyCatY / 2, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
+
+Global $cIdNaughtyCat = GUICtrlCreatePic("", 0, 0, $iNaughtyCatX, $iNaughtyCatY)
+If @Compiled Then
+	Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "NAUGHTY_CAT")), True)
+	_WinAPI_DeleteObject(GUICtrlSendMsg(-1, 0x0172, 0, $hBmp))
+	_WinAPI_DeleteObject($hBmp)
+Else
+	GUICtrlSetImage(-1, @ScriptDir & "\svartnos_tunga.jpg")
 EndIf
 
 
@@ -364,6 +382,8 @@ While 1
 		Case $idDeleteAvatars
 			_AvatarsDeleteALL()
 			_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
+		Case $cIdNaughtyCat
+			GUISetState(@SW_HIDE, $hNaughtyCatGui)
 	EndSwitch
 WEnd
 
@@ -939,6 +959,7 @@ Func _ServerInfoShow($iIndex)
 
 		_GUICtrlListView_AddItem($idServerPlayers, $sCleanName, $iListNew)
 	Next
+	_GUICtrlListView_AddItem($idServerPlayers, "Pc_Girl", $iListNew)
 ;~ 	ConsoleWrite(UBound($asServerPlayers) -1 & @LF)
 ;~ 	ConsoleWrite($iNeedDetails & @LF)
 	If $iNeedDetails > _GUICtrlListView_GetItemCount($idServerPlayers) -1 Then
@@ -963,10 +984,10 @@ Func _DownloadPlayerImages()
 			ContinueLoop
 		EndIf
 
-		If _NaughtyList($sFileName) Then
-			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListNaughty)
-			ContinueLoop
-		EndIf
+;~ 		If _NaughtyList($sFileName) Then
+;~ 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListNaughty)
+;~ 			ContinueLoop
+;~ 		EndIf
 
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
 		$sFileNameTEMP = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".tmp"
@@ -1351,7 +1372,35 @@ Func _Quitting()
 	_Log("bye")
 EndFunc
 
+Func _AdlibNaughtyList()
+	AdlibUnRegister(_AdlibNaughtyList)
+;~ 	ConsoleWrite("test" & @LF)
+
+;~ 	Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
+
+;~ 	GUICreate("Naughty - " & StringTrimRight(@ScriptName, 4), $iNaughtyCatX, $iNaughtyCatY, $iGuiX / 2 - $iNaughtyCatX / 2, $iGuiY / 2 - $iNaughtyCatY / 2, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
+
+;~ 	GUICtrlCreatePic("", 0, 0, $iNaughtyCatX, $iNaughtyCatY)
+;~ 	If @Compiled Then
+;~ 		Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "NAUGHTY_CAT")), True)
+;~ 		_WinAPI_DeleteObject(GUICtrlSendMsg(-1, 0x0172, 0, $hBmp))
+;~ 		_WinAPI_DeleteObject($hBmp)
+;~ 	Else
+;~ 		GUICtrlSetImage(-1, @ScriptDir & "\svartnos_tunga.jpg")
+;~ 	EndIf
+
+	GUISetState(@SW_SHOW, $hNaughtyCatGui)
+	AdlibRegister(_AdlibNaughtyProcessor, 5000)
+EndFunc
+
+Func _AdlibNaughtyProcessor()
+	AdlibUnRegister(_AdlibNaughtyProcessor)
+;~ 	GUIDelete()
+	GUISetState(@SW_HIDE, $hNaughtyCatGui)
+EndFunc
+
 ;Thx to Yashied for Code/Idea on how to handle listview checkboxes http://www.autoitscript.com/forum/topic/110391-listview-get-change-in-checking-items/#entry775483
+;Thx to GaryFrost for Code/Idea on how to handle listview hover event http://www.autoitscript.com/forum/topic/41345-hover-detection-with-listview-is-it-posiible/?p=307598
 Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 	#forceref $hWnd, $iMsg, $iwParam
 	Local $iIDFrom, $iCode, $tNMHDR, $tInfo, $iIndex
@@ -1361,40 +1410,59 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 	$iIDFrom = DllStructGetData($tNMHDR, "IDFrom")
 	$iCode = DllStructGetData($tNMHDR, "Code")
 
-	If $iIDFrom <> $idServers Then Return $GUI_RUNDEFMSG
+;~ 	If $iIDFrom <> $idServers Then Return $GUI_RUNDEFMSG
 
-	Switch $iCode
-		Case $LVN_ITEMCHANGING
-			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-			$iIndex = DllStructGetData($tInfo, "Index")
-			$iState = _GUICtrlListView_GetItemChecked($idServers, $iIndex)
+	Switch $iIDFrom
+		Case $idServers
+			Switch $iCode
+				Case $LVN_ITEMCHANGING
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Index")
+					$iState = _GUICtrlListView_GetItemChecked($idServers, $iIndex)
 
-			If $iListviewFlag Then
-				$iListviewIndex = $iIndex
-				$iListviewFlag = False
-			EndIf
-		Case $LVN_ITEMCHANGED
-			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-			$iIndex = DllStructGetData($tInfo, "Index")
-			If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
-				IniWrite(@ScriptDir & "\Servers.ini", _GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
-			EndIf
+					If $iListviewFlag Then
+						$iListviewIndex = $iIndex
+						$iListviewFlag = False
+					EndIf
+				Case $LVN_ITEMCHANGED
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Index")
+					If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
+						IniWrite(@ScriptDir & "\Servers.ini", _GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
+					EndIf
 
-			If $iListviewIndex <> -1 Then
-				If $iListviewIndex <> $iIndex Then
+					If $iListviewIndex <> -1 Then
+						If $iListviewIndex <> $iIndex Then
+							_ServerInfoShow($iIndex)
+							$iListviewIndex = -1
+						EndIf
+					EndIf
+				Case $LVN_KEYDOWN
+					$iListviewFlag = True
+				Case $NM_CLICK
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$aiHit = _GUICtrlListView_HitTest(GUICtrlGetHandle($idServers))
+					If IsArray($aiHit) And $aiHit[3] = False Then Return $GUI_RUNDEFMSG
+
+					$iIndex = DllStructGetData($tInfo, "Index")
 					_ServerInfoShow($iIndex)
-					$iListviewIndex = -1
-				EndIf
-			EndIf
-		Case $LVN_KEYDOWN
-			$iListviewFlag = True
-		Case $NM_CLICK
-			$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-			$aiHit = _GUICtrlListView_HitTest(GUICtrlGetHandle($idServers))
-			If IsArray($aiHit) And $aiHit[3] = False Then Return $GUI_RUNDEFMSG
-
-			$iIndex = DllStructGetData($tInfo, "Index")
-			_ServerInfoShow($iIndex)
+			EndSwitch
+		Case $idServerPlayers
+			Switch $iCode
+;~ 				Case $NM_HOVER
+;~ 					ConsoleWrite("Hover detected " & Random() & @LF)
+				Case $LVN_HOTTRACK
+;~ 					ConsoleWrite("HotTrack detected " & Random() & @LF)
+					AdlibUnRegister(_AdlibNaughtyList)
+					$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Item")
+					If $iIndex = -1 Then Return $GUI_RUNDEFMSG
+;~ 					ListView_HOTTRACK(DllStructGetData($tInfo, "SubItem"))
+;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "Item") & @LF)
+;~ 					ConsoleWrite(Random() & "\" & DllStructGetData($tInfo, "SubItem") & @LF)
+;~ 					ConsoleWrite(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item")) & @LF)
+					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyList, 2000)
+			EndSwitch
 	EndSwitch
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_NOTIFY
