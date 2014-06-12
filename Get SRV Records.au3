@@ -2,7 +2,7 @@
 Originally was a script to get MX records written by trancexx
 http://www.autoitscript.com/forum/topic/78465-mx-records-for-a-specific-domain/
 
-Now modified to GET SRV records by AdmiralAlkex
+Now modified to get SRV records by AdmiralAlkex
 #ce
 
 Opt("MustDeclareVars", 1)
@@ -12,7 +12,6 @@ Opt("MustDeclareVars", 1)
 Local $domain = "_minecraft._tcp.mc.streamercraft.com" ; change it to domain of your interest
 
 Local $mx = SRVRecords($domain)
-;~ _ArrayDisplay($mx)
 
 If IsArray($mx) Then
     Local $au
@@ -32,61 +31,22 @@ Func SRVRecords($domain)
     Local $binary_data = SRVQueryServer($domain)
     If $binary_data = -1 Then Return -1
 
-;~ 	ConsoleWrite(VarGetType($binary_data) & @LF)
-;~ 	ConsoleWrite(BinaryLen($binary_data) & @LF)
-;~ 	ConsoleWrite($binary_data & @LF)
-;~ 	ConsoleWrite(BinaryToString($binary_data, 1) & @LF)
-
-;~     Local $output = ExtractSRVServerData($binary_data)
-;~     SortArray($output)
-
-
-	Local $output[5][4]
-
-	$output[0][0] = 0
-	$output[0][1] = 15
-	$output[0][2] = 25899
-	$output[0][3] = "apa1"
-
-	$output[1][0] = 22
-	$output[1][1] = 7
-	$output[1][2] = 25899
-	$output[0][3] = "apa1"
-
-	$output[2][0] = 0
-	$output[2][1] = 5
-	$output[2][2] = 25899
-	$output[2][3] = "apa3"
-
-	$output[3][0] = 22
-	$output[3][1] = 39
-	$output[3][2] = 25899
-	$output[3][3] = "apa4"
-
-	$output[4][0] = 22
-	$output[4][1] = 30
-	$output[4][2] = 25899
-	$output[4][3] = "apa5"
+	Local $output = ExtractSRVServerData($binary_data)
 
 	_ArraySort($output, 0, 0, 0, 0)
 
-	_ArrayDisplay($output)
 	Local $iStart = -1
 	For $iX = 1 To UBound($output) -1
 		If $output[$iX][0] = $output[$iX -1][0] And $iStart = -1 Then
-			ConsoleWrite(1 & @LF)
 			$iStart = $iX -1
 		ElseIf $output[$iX][0] <> $output[$iX -1][0] And $iStart <> -1 Then
-			ConsoleWrite(2 & @LF)
 			_ArraySort($output, 1, $iStart, $iX -1, 1)
 			$iStart = -1
 		EndIf
 	Next
 	If $iStart <> -1 Then
-		ConsoleWrite(3 & @LF)
 		_ArraySort($output, 1, $iStart, $iX -1, 1)
 	EndIf
-	_ArrayDisplay($output)
 
     Return $output
 
@@ -185,8 +145,7 @@ Func ExtractSRVServerData($binary_data)
 	Local $iWeight[$arr[0]]
 	Local $iPort[$arr[0]]
     Local $sTarget[$arr[0]] ; server name(s)
-    Local $output[4][$arr[0] -1] ; this goes out containing both server names and coresponding preference numbers
-;~     $output[0][0] = $arr[0] - 1
+    Local $output[$arr[0] -1][4] ; this goes out containing both server names and coresponding priority/weight and port numbers
 
     Local $offset = 10 ; initial offset
 
@@ -195,23 +154,14 @@ Func ExtractSRVServerData($binary_data)
         $arr[$i] = "0x" & $arr[$i] ; well, it is binary data
 
         $iPriority[$i - 1] = Dec(StringRight(BinaryMid($arr[$i], 7, 2), 4))
-;~ 		ConsoleWrite($iPriority[$i - 1] & @LF)
-;~ 		ConsoleWrite(BinaryMid($arr[$i], 7, 2) & @LF)
 
         $iWeight[$i - 1] = Dec(StringRight(BinaryMid($arr[$i], 9, 2), 4))
-;~ 		ConsoleWrite($iWeight[$i - 1] & @LF)
-;~ 		ConsoleWrite(BinaryMid($arr[$i], 7, 2) & @LF)
 
         $iPort[$i - 1] = Dec(StringRight(BinaryMid($arr[$i], 11, 2), 4))
-;~ 		ConsoleWrite($iPort[$i - 1] & @LF)
-;~ 		ConsoleWrite(BinaryMid($arr[$i], 7, 2) & @LF)
 
-;~ 		ConsoleWrite($offset & @LF)
         $offset += BinaryLen($arr[$i - 1]) + 10 ; adding lenght of every past part plus lenght of that "C00C000F0001" used for splitting
-;~ 		ConsoleWrite($offset & @LF)
 
         Local $array = ReadBinary($binary_data, $offset) ; extraction of server names starts here
-;~ 		_ArrayDisplay($arr)
 
         While $array[1] = 192 ; dealing with special case
             $array = ReadBinary($binary_data, $array[6] + 2)
@@ -247,15 +197,10 @@ Func ExtractSRVServerData($binary_data)
 
         WEnd
 
-;~         $output[0][$i - 1] = $sTarget[$i - 1] ; assigning
-;~         $output[1][$i - 1] = $iPriority[$i - 1]
-;~         $output[2][$i - 1] = $iWeight[$i - 1]
-;~         $output[3][$i - 1] = $iPort[$i - 1]
-
-        $output[$i - 2][1] = $iPriority[$i - 1]
-        $output[$i - 2][2] = $iWeight[$i - 1]
-        $output[$i - 2][3] = $iPort[$i - 1]
-        $output[$i - 2][0] = $sTarget[$i - 1]
+        $output[$i - 2][0] = $iPriority[$i - 1]
+        $output[$i - 2][1] = $iWeight[$i - 1]
+        $output[$i - 2][2] = $iPort[$i - 1]
+        $output[$i - 2][3] = $sTarget[$i - 1]
 
     Next
 
@@ -285,44 +230,3 @@ Func ReadBinary($binary_data, $offset)
     Return $array
 
 EndFunc   ;==>ReadBinary
-
-
-Func SortArray(ByRef $array) ; this will sort our $array by preferance numbers (in case of identical preferance, lower in order goes first - that's cool)
-
-    If IsArray($array) Then
-        ReDim $array[2][2 * $array[0][0] + 1]
-
-        For $ij = $array[0][0] + 1 To 2 * $array[0][0]
-            $array[1][$ij] = 1
-        Next
-
-        For $bf = 1 To $array[0][0]
-            For $cf = 1 To $array[0][0]
-                If $array[1][$cf] - $array[1][$bf] > 0 Then $array[1][$cf + $array[0][0]] += 1
-            Next
-        Next
-
-        For $df = $array[0][0] + 1 To 2 * $array[0][0]
-            For $ef = $array[0][0] + 1 To 2 * $array[0][0]
-                If $ef = $df Then ContinueLoop
-                If $array[1][$ef] - $array[1][$df] = 0 Then $array[1][$ef] += 1
-            Next
-        Next
-
-        Local $aux_array[2][$array[0][0] + 1]
-
-        $aux_array[0][0] = $array[0][0]
-
-        For $ff = 1 To $array[0][0]
-            $aux_array[1][$array[1][$ff + $array[0][0]]] = $array[1][$ff]
-            $aux_array[0][$array[1][$ff + $array[0][0]]] = $array[0][$ff]
-        Next
-
-        $array = $aux_array
-
-        Return $aux_array
-    EndIf
-
-    Return -1
-
-EndFunc   ;==>SortArray
