@@ -1,0 +1,22 @@
+------------------------------
+Compile or running from source
+------------------------------
+
+1. Install AutoIt v3 from http://autoitscript.com/
+Optionally  install SciTE4AutoIt3 from same website for more options when running/compiling
+
+2. MSPC requires the following three files, download the UDFs from the links and put the required file in the same folder as "Minecraft Server Periodic Checker.au3"
+
+AutoItObject.au3 - http://www.autoitscript.com/forum/topic/110379-autoitobject-udf/
+JSMN.au3 - http://www.autoitscript.com/forum/topic/148114-jsmn-a-non-strict-json-udf/
+Icons.au3 - http://www.autoitscript.com/forum/topic/92675-icons-udf/
+
+3. Open "Minecraft Server Periodic Checker.au3" in SciTE and either:
+*Tools > Compile
+*Tools > Go
+
+
+NOTE:
+Make sure to use x86 AutoIt, some function (_TCPConnect()?) fails in x64. If you get it to run, please tell me ;)
+
+To choose between x86/x64, select x86 as the default mode during the AutoIt installer (as of the time I'm writing this, it should be the default) or install SciTE4AutoIt3 as that allows you to set such options directly in the script (already set, just run).
