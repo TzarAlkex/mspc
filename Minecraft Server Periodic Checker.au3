@@ -12,7 +12,6 @@
 #AutoIt3Wrapper_Res_File_Add=PleaseWait.png, rt_rcdata, AVATAR_WAIT
 #AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
 #AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
-#AutoIt3Wrapper_Res_File_Add=Naughty.png, rt_rcdata, AVATAR_NAUGHTY
 #AutoIt3Wrapper_Res_File_Add=svartnos_tunga.jpg, rt_rcdata, NAUGHTY_CAT
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
@@ -193,12 +192,10 @@ If @Compiled Then
 	Global $iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
 	Global $iListError = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_ERROR")
 	Global $iListDefault = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_DEFAULT")
-	Global $iListNaughty = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_NAUGHTY")
 Else
 	Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
 	Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
 	Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
-	Global $iListNaughty = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Naughty.png")
 EndIf
 Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
 _GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
@@ -979,7 +976,6 @@ Func _DownloadPlayerImages()
 		EndIf
 
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
-		$sFileNameTEMP = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".tmp"
 
 		If FileExists($sFileNameHEAD) Then
 			_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
