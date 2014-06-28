@@ -438,14 +438,14 @@ Func _ServerVersionSet($sValue)
 		Return
 	EndIf
 
-	Local $sSection, $sKey
+	Local $sIP, $sPort
 
 	For $iX = $aiListviewSelected[0] To 1 Step -1
 		_GUICtrlListView_SetItemChecked($idServers, $aiListviewSelected[$iX])
 
-		$sSection = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
-		$sKey = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
-		IniWrite(@ScriptDir & "\Servers.ini", $sSection, $sKey, $sValue)
+		$sIP = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
+		$sPort = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
+		IniWrite(@ScriptDir & "\Servers.ini", $sIP, $sPort, $sValue)
 	Next
 EndFunc
 
