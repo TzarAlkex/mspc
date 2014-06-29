@@ -31,3 +31,6 @@ _ResourceGetAsRaw
 
 GaryFrost
 http://www.autoitscript.com/forum/topic/41345-hover-detection-with-listview-is-it-posiible/?p=307598
+
+twitchyliquid64
+http://www.autoitscript.com/forum/topic/129823-autoit-pickler-freeze-variables-and-commit-them-to-disk/
