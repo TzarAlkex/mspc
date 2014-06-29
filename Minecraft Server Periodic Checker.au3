@@ -47,12 +47,17 @@
 #include <Date.au3>
 #include <InetConstants.au3>
 #include <FontConstants.au3>
+#include "AutoIt Pickler.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
 Opt("GUIResizeMode", $GUI_DOCKALL)
 
+Global Enum $eServer, $ePort, $eEnabled, $eProtocol, $eSRVData
+Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3
+
 Global $sMyCLSID = "AutoIt.ServerChecker"
+Global $sMyCLSID2 = "AutoIt.ServerCheckerList"
 
 Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
 Func _ErrFunc()
@@ -66,6 +71,7 @@ EndIf
 
 
 _GDIPlus_Startup()
+_AutoItObject_StartUp()
 
 Global $hBitmap, $hImage, $hGraphic
 $hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
@@ -127,26 +133,152 @@ $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
 GUICtrlCreateMenuItem("", $idServerContext)
 GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
 GUICtrlSetState(-1, $GUI_DISABLE)
+Local $idServerMenuAuto = GUICtrlCreateMenuItem("Automatic (not implemented)", $idServerContext)
+GUICtrlSetState(-1, $GUI_DISABLE)
 Local $idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
 Local $idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
 Local $idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
 
 _IniClean()
-$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
-If Not @error Then
+
+Local $oServers = _Servers()
+$oServers.ConvertINI()
+If UBound($oServers.List) = 0 Then $oServers.Load()
+
+For $iX = 0 To UBound($oServers.List) -1
+	GUICtrlCreateListViewItem($oServers.List[$iX][$eServer] & "|" & $oServers.List[$iX][$ePort], $idServers)
+	GUICtrlSetBkColor(-1, 0xFFFFFF)
+	GUICtrlSetColor(-1, 0)
+	If $oServers.List[$iX][$eEnabled] Then _GUICtrlListView_SetItemChecked($idServers, _GUICtrlListView_GetItemCount($idServers) -1)
+Next
+
+If _GUICtrlListView_GetItemCount($idServers) > 0 Then
+	_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
+	_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
+EndIf
+
+Func _Servers()
+	Local $avServers[0][0]
+
+    Local $oClassObject = _AutoItObject_Class()
+	$oClassObject.AddProperty("List", $ELSCOPE_READONLY, $avServers)
+    $oClassObject.AddMethod("ConvertINI", "_ServersConvertINI")
+	$oClassObject.AddMethod("Add", "_ServersAdd")
+	$oClassObject.AddMethod("Delete", "_ServersDelete")
+    $oClassObject.AddMethod("Load", "_ServersLoad")
+    $oClassObject.AddMethod("Save", "_ServersSave")
+    $oClassObject.AddMethod("SetEnabled", "_ServersSetEnabled")
+    $oClassObject.AddMethod("SetProtocol", "_ServersSetProtocol")
+    $oClassObject.AddMethod("Enabled", "_ServersEnabled")
+
+    Return $oClassObject.Object
+EndFunc   ;==>_SomeObject
+
+Func _ServersConvertINI($oSelf)
+	Local $asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
+	If @error Then Return
 	For $iX = 1 To $asServers[0]
-		$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
+		Local $asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
 		If @error Then ContinueLoop
 		For $iY = 1 To $asPorts[0][0]
-			GUICtrlCreateListViewItem($asServers[$iX] & "|" & $asPorts[$iY][0], $idServers)
-			GUICtrlSetBkColor(-1, 0xFFFFFF)
-			GUICtrlSetColor(-1, 0)
-			If $asPorts[$iY][1] = "True" Or $asPorts[$iY][1] = "Old" Or $asPorts[$iY][1] = "New" Then _GUICtrlListView_SetItemChecked($idServers, _GUICtrlListView_GetItemCount($idServers) -1)
+			Local $avStuff = _IniServerStuffToServerlistStuff($asPorts[$iY][1])
+			$oSelf.Add($asServers[$iX], $asPorts[$iY][0], $avStuff[0], $avStuff[1])
 		Next
-		_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
-		_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
 	Next
-EndIf
+
+	If UBound($oSelf.List) > 0 Then
+		Local $avTemp = $oSelf.List
+
+		Pickle($avTemp, @ScriptDir & "\Servers.dat")
+		FileDelete(@ScriptDir & "\Servers.ini")
+	EndIf
+EndFunc
+
+Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $sProtocol)
+	Local $avList = $oSelf.List, $iUBound = UBound($avList)
+	ReDim $avList[$iUBound +1][4]
+	$avList[$iUBound][$eServer] = $sServer
+	$avList[$iUBound][$ePort] = $sPort
+	$avList[$iUBound][$eEnabled] = $bEnabled
+	$avList[$iUBound][$eProtocol] = $sProtocol
+
+	$oSelf.List = $avList
+EndFunc
+
+Func _ServersDelete($oSelf, $sServer, $sPort)
+	Local $avList = $oSelf.List
+
+	For $iX = 0 To UBound($avList) -1
+		If $avList[$iX][$eServer] = $sServer And $avList[$iX][$ePort] = $sPort Then
+			_ArrayDelete($avList, $iX)
+			ExitLoop
+		EndIf
+	Next
+
+	$oSelf.List = $avList
+EndFunc
+
+Func _ServersLoad($oSelf)
+	$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
+	If $avTemp = 0 Then Return
+	$oSelf.List = $avTemp
+EndFunc
+
+Func _ServersSave($oSelf)
+	$avTemp = $oSelf.List
+	Pickle($avTemp, @ScriptDir & "\Servers.dat")
+EndFunc
+
+Func _ServersSetEnabled($oSelf, $sServer, $sPort, $bEnabled)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eEnabled] = $bEnabled
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eProtocol] = $sProtocol
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersEnabled($oSelf)
+	Local $asRet = $oSelf.List
+
+	For $iX = UBound($asRet) -1 To 0 Step -1
+		If Not $asRet[$iX][$eEnabled] Then
+			_ArrayDelete($asRet, $iX)
+		EndIf
+	Next
+
+	Return $asRet
+EndFunc
+
+Func _IniServerStuffToServerlistStuff($sText)
+	Switch $sText
+		Case "False"
+			Local $avRet[2] = [False, "Auto"]
+		Case "Old"
+			Local $avRet[2] = [True, $eProtocol1]
+		Case "True"
+			Local $avRet[2] = [True, $eProtocol2]
+		Case "New"
+			Local $avRet[2] = [True, $eProtocol3]
+		Case Else
+			_Log("Servers.ini either corrupted or manually edited by a schmuck")
+	EndSwitch
+
+	Return $avRet
+EndFunc
 
 Local $sSecondsBetweenScans
 Local $sMinutesBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans", "IsglassIsTasty")
@@ -295,9 +427,9 @@ GUIRegisterMsg($WM_COMMAND, "_WM_COMMAND")
 GUIRegisterMsg($WM_GETMINMAXINFO, "_WM_GETMINMAXINFO")
 OnAutoItExitRegister("_Quitting")
 
-_AutoItObject_StartUp()
 Global $oObject = _SomeObject()
-Global $hObj = _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItPID)
+_AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItPID)
+_AutoItObject_RegisterObject($oServers, $sMyCLSID2 & "." & @AutoItPID)
 
 If IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "MyVeryRandomString") = "MyVeryRandomString" Then
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
@@ -343,7 +475,7 @@ While 1
 			GUICtrlSetColor(-1, 0)
 			_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
 			_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
-			IniWrite(@ScriptDir & "\Servers.ini", $asAddress[0], $asAddress[1], "False")
+			$oServers.Add($asAddress[0], $asAddress[1], False, "Auto")
 			GUICtrlSetState(-1, $GUI_CHECKED)
 		Case $idScanNow
 			_ServerCheck()
@@ -351,12 +483,14 @@ While 1
 			_ServerDelete()
 		Case $idServerShowPopup
 			_ServerPopupShow()
+		Case $idServerMenuAuto
+			_ServerVersionSet("Auto")
 		Case $idServerMenuOld
-			_ServerVersionSet("Old")
+			_ServerVersionSet("1")
 		Case $idServerMenuTrue
-			_ServerVersionSet("True")
+			_ServerVersionSet("2")
 		Case $idServerMenuNew
-			_ServerVersionSet("New")
+			_ServerVersionSet("3")
 		Case $cIdHints
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $cIdSettings
@@ -391,7 +525,7 @@ Func _ServerDelete()
 	EndIf
 
 	For $iX = $aiListviewSelected[0] To 1 Step -1
-		IniDelete(@ScriptDir & "\Servers.ini", _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX]), _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1))
+		$oServers.Delete(_GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX]), _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1))
 		_GUICtrlListView_DeleteItem($idServers, $aiListviewSelected[$iX])
 	Next
 EndFunc
@@ -438,14 +572,14 @@ Func _ServerVersionSet($sValue)
 		Return
 	EndIf
 
-	Local $sIP, $sPort
+	Local $sServer, $sPort
 
 	For $iX = $aiListviewSelected[0] To 1 Step -1
 		_GUICtrlListView_SetItemChecked($idServers, $aiListviewSelected[$iX])
 
-		$sIP = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
+		$sServer = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
 		$sPort = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
-		IniWrite(@ScriptDir & "\Servers.ini", $sIP, $sPort, $sValue)
+		$oServers.SetProtocol($sServer, $sPort, $sValue)
 	Next
 EndFunc
 
@@ -547,6 +681,9 @@ EndFunc
 Func _ServerScanner()
 	Local $iSocket
 	Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
+	Local $oList = ObjGet($sMyCLSID2 & "." & $CmdLine[2])
+
+	$avList = $oList.Enabled()
 
 	TCPStartup()
 
@@ -554,156 +691,151 @@ Func _ServerScanner()
 	If $iTimeoutSeconds = 0 Then $iTimeoutSeconds = 10
 	Local $iTimeoutMS = $iTimeoutSeconds * 1000
 
-	$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
-	If Not @error Then
-		For $iX = 1 To $asServers[0]
-			$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
-			If @error Then ContinueLoop
+	For $iY = 0 To UBound($avList) -1
+		If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
+			$iSocket = _TCPConnect($avList[$iY][$eServer], $avList[$iY][$ePort], $iTimeoutMS)
+		Else
+			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
+		EndIf
+		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
+		If $avList[$iY][$eProtocol] = $eProtocol1 Then   ;pre 1.4 protocol
+			$oObj.Log("pre 1.4 protocol")
+			TCPSend($iSocket, Binary("0xFE"))
+		ElseIf $avList[$iY][$eProtocol] = $eProtocol3 Then   ;1.7+ protocol
+			$oObj.Log("1.7+ protocol")
+			$bTemp = Binary("0x0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01" & "0100"
+			$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
+			$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01"   ;first byte (0x!0E!0004) should be total length
+			$bRequest = "0100"
+			TCPSend($iSocket, $bTemp)
+		ElseIf $avList[$iY][$eProtocol] = $eProtocol2 Then   ;1.4 - 1.7 protocol
+			$oObj.Log("1.4 - 1.7 protocol")
+			TCPSend($iSocket, Binary("0xFE01"))
+		ElseIf $avList[$iY][$eProtocol] = $eProtocolAuto Then
+			$oObj.Log("Automatic protocol finder not implemented")
+		Else
+			$oObj.Log("Servers.dat either corrupted or manually edited by a schmuck")
+		EndIf
 
-			For $iY = 1 To $asPorts[0][0]
-				If $asPorts[$iY][1] = "False" Then ContinueLoop
-				If StringIsDigit(StringReplace($asServers[$iX], ".", "")) Then
-					$iSocket = _TCPConnect($asServers[$iX], $asPorts[$iY][0], $iTimeoutMS)
-				Else
-					$iSocket = _TCPConnect(TCPNameToIP($asServers[$iX]), $asPorts[$iY][0], $iTimeoutMS)
+		Local $iTimeOut = TimerInit()
+
+		While 1
+			While 1
+				Sleep(1500)
+				$dRet = TCPRecv($iSocket, 1500, 1)
+				$error = @error
+				If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
+					TCPCloseSocket($iSocket)
+					ExitLoop
 				EndIf
-				$oObj.Log("Connecting to " & $asServers[$iX] & ":" & $asPorts[$iY][0] & " /Socket=" & $iSocket & " /Error=" & @error)
-				If $asPorts[$iY][1] = "Old" Then   ;pre 1.4 protocol
-					$oObj.Log("pre 1.4 protocol")
-					TCPSend($iSocket, Binary("0xFE"))
-				ElseIf $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
-					$oObj.Log("1.7+ protocol")
-					$bTemp = Binary("0x0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01" & "0100"
-					$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
-					$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($asServers[$iX]), 2)) & Binary($asServers[$iX]) & Hex($asPorts[$iY][0], 4) & "01"   ;first byte (0x!0E!0004) should be total length
-					$bRequest = "0100"
-					TCPSend($iSocket, $bTemp)
-				Else   ;1.4 - 1.7 protocol
-					$oObj.Log("1.4 - 1.7 protocol")
-					TCPSend($iSocket, Binary("0xFE01"))
-				EndIf
 
-				Local $iTimeOut = TimerInit()
+				If $dRet <> "" Then
 
-				While 1
-					While 1
-						Sleep(1500)
-						$dRet = TCPRecv($iSocket, 1500, 1)
-						$error = @error
-						If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
-							TCPCloseSocket($iSocket)
-							ExitLoop
-						EndIf
+					If $avList[$iY][$eProtocol] = $eProtocol3 Then   ;1.7+ protocol
 
-						If $dRet <> "" Then
+						Do
+							Sleep(500)
+							$dRet &= TCPRecv($iSocket, 1500, 1)
+						Until @error <> 0
 
-							If $asPorts[$iY][1] = "New" Then   ;1.7+ protocol
+						$oObj.Log("JSON START")
+						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
+						$oObj.Log("JSON END")
 
-								Do
-									Sleep(500)
-									$dRet &= TCPRecv($iSocket, 1500, 1)
-								Until @error <> 0
+						$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
 
-								$oObj.Log("JSON START")
-								$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
-								$oObj.Log("JSON END")
+						$sDescription = Jsmn_ObjGet($oJSON, "description")
 
-								$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
+						$oVersion = Jsmn_ObjGet($oJSON, "version")
+						$sVersionName = Jsmn_ObjGet($oVersion, "name")
+						$iVersionProtocol = Jsmn_ObjGet($oVersion, "protocol")
 
-								$sDescription = Jsmn_ObjGet($oJSON, "description")
-
-								$oVersion = Jsmn_ObjGet($oJSON, "version")
-								$sVersionName = Jsmn_ObjGet($oVersion, "name")
-								$iVersionProtocol = Jsmn_ObjGet($oVersion, "protocol")
-
-								$oPlayers = Jsmn_ObjGet($oJSON, "players")
-								$iPlayersMax = Jsmn_ObjGet($oPlayers, "max")
-								$iPlayersOnline = Jsmn_ObjGet($oPlayers, "online")
-								If Jsmn_ObjExists($oPlayers, "sample") Then
-									$oSample = Jsmn_ObjGet($oPlayers, "sample")
-									$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
-									If UBound($oSampleKeys) >= 1 Then
-										Local $aPlayer = $oSampleKeys[0], $asPlayers[UBound($oSampleKeys)][2]
-										If $aPlayer[1][0] = "name" Then
-											For $iZ = 0 To UBound($oSampleKeys) -1
-												$aPlayer = $oSampleKeys[$iZ]
-												$asPlayers[$iZ][0] = $aPlayer[1][1]
-												$asPlayers[$iZ][1] = $aPlayer[2][1]
-											Next
-										Else
-											For $iZ = 0 To UBound($oSampleKeys) -1
-												$aPlayer = $oSampleKeys[$iZ]
-												$asPlayers[$iZ][0] = $aPlayer[2][1]
-												$asPlayers[$iZ][1] = $aPlayer[1][1]
-											Next
-										EndIf
-										$oObj.Player($asServers[$iX], $asPorts[$iY][0], $asPlayers)
-									EndIf
+						$oPlayers = Jsmn_ObjGet($oJSON, "players")
+						$iPlayersMax = Jsmn_ObjGet($oPlayers, "max")
+						$iPlayersOnline = Jsmn_ObjGet($oPlayers, "online")
+						If Jsmn_ObjExists($oPlayers, "sample") Then
+							$oSample = Jsmn_ObjGet($oPlayers, "sample")
+							$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
+							If UBound($oSampleKeys) >= 1 Then
+								Local $aPlayer = $oSampleKeys[0], $asPlayers[UBound($oSampleKeys)][2]
+								If $aPlayer[1][0] = "name" Then
+									For $iZ = 0 To UBound($oSampleKeys) -1
+										$aPlayer = $oSampleKeys[$iZ]
+										$asPlayers[$iZ][0] = $aPlayer[1][1]
+										$asPlayers[$iZ][1] = $aPlayer[2][1]
+									Next
+								Else
+									For $iZ = 0 To UBound($oSampleKeys) -1
+										$aPlayer = $oSampleKeys[$iZ]
+										$asPlayers[$iZ][0] = $aPlayer[2][1]
+										$asPlayers[$iZ][1] = $aPlayer[1][1]
+									Next
 								EndIf
-
-								If Jsmn_ObjExists($oJSON, "modinfo") Then
-									Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
-									Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
-
-									Local $oModList = Jsmn_ObjGet($oModinfo, "modList")
-									Local $oModListKeys = Jsmn_ObjTo2DArray($oModList)
-
-									Local $aMod = $oModListKeys[0], $asMods[UBound($oModListKeys)][2]
-									If $aMod[1][0] = "modid" Then
-										For $iZ = 0 To UBound($oModListKeys) -1
-											$aMod = $oModListKeys[$iZ]
-											$asMods[$iZ][0] = $aMod[1][1]
-											$asMods[$iZ][1] = $aMod[2][1]
-										Next
-									Else
-										For $iZ = 0 To UBound($oModListKeys) -1
-											$aMod = $oModListKeys[$iZ]
-											$asMods[$iZ][0] = $aMod[2][1]
-											$asMods[$iZ][1] = $aMod[1][1]
-										Next
-									EndIf
-									$oObj.Mod($asServers[$iX], $asPorts[$iY][0], $oModinfoType, $asMods)
-								EndIf
-
-								If Jsmn_ObjExists($oJSON, "favicon") Then
-									$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
-									$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
-									$oObj.Icon($asServers[$iX], $asPorts[$iY][0], $dPng)
-								EndIf
-
-								$oObj.Results($asServers[$iX], $asPorts[$iY][0], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
-								TCPCloseSocket($iSocket)
-								ExitLoop 2
-							Else   ;Pre 1.7 protocols
-								$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
-
-								If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
-									If StringReplace($aRet[3], ".", "") >= 170 Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "New")
-									$oObj.Results($asServers[$iX], $asPorts[$iY][0], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
-								Else   ;pre 1.4 protocol
-									$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
-									If UBound($aRet) = 4 Then
-										If $asPorts[$iY][1] = "True" Then IniWrite(@ScriptDir & "\Servers.ini", $asServers[$iX], $asPorts[$iY][0], "Old")
-										$oObj.Results($asServers[$iX], $asPorts[$iY][0], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
-									Else
-										$oObj.Log("Error")
-										$oObj.Results($asServers[$iX], $asPorts[$iY][0], "Error", "Error", "Error", "Error", "Error")   ;Error
-									EndIf
-								EndIf
-
-								TCPCloseSocket($iSocket)
-								ExitLoop 2
+								$oObj.Player($avList[$iY][$eServer], $avList[$iY][$ePort], $asPlayers)
 							EndIf
 						EndIf
-					WEnd
 
-					$oObj.Log("Offline")
-					$oObj.Results($asServers[$iX], $asPorts[$iY][0], "", "", "", "", "")   ;Server offline
-					ExitLoop
-				WEnd
-			Next
-		Next
-	EndIf
+						If Jsmn_ObjExists($oJSON, "modinfo") Then
+							Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
+							Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
+
+							Local $oModList = Jsmn_ObjGet($oModinfo, "modList")
+							Local $oModListKeys = Jsmn_ObjTo2DArray($oModList)
+
+							Local $aMod = $oModListKeys[0], $asMods[UBound($oModListKeys)][2]
+							If $aMod[1][0] = "modid" Then
+								For $iZ = 0 To UBound($oModListKeys) -1
+									$aMod = $oModListKeys[$iZ]
+									$asMods[$iZ][0] = $aMod[1][1]
+									$asMods[$iZ][1] = $aMod[2][1]
+								Next
+							Else
+								For $iZ = 0 To UBound($oModListKeys) -1
+									$aMod = $oModListKeys[$iZ]
+									$asMods[$iZ][0] = $aMod[2][1]
+									$asMods[$iZ][1] = $aMod[1][1]
+								Next
+							EndIf
+							$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
+						EndIf
+
+						If Jsmn_ObjExists($oJSON, "favicon") Then
+							$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
+							$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
+							$oObj.Icon($avList[$iY][$eServer], $avList[$iY][$ePort], $dPng)
+						EndIf
+
+						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
+						TCPCloseSocket($iSocket)
+						ExitLoop 2
+					Else   ;Pre 1.7 protocols
+						$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
+
+						If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
+							If StringReplace($aRet[3], ".", "") >= 170 Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
+							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
+						Else   ;pre 1.4 protocol
+							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
+							If UBound($aRet) = 4 Then
+								If $avList[$iY][$eProtocol] = $eProtocol2 Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
+							Else
+								$oObj.Log("Error")
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "Error", "Error", "Error", "Error")   ;Error
+							EndIf
+						EndIf
+
+						TCPCloseSocket($iSocket)
+						ExitLoop 2
+					EndIf
+				EndIf
+			WEnd
+
+			$oObj.Log("Offline")
+			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "", "", "", "", "")   ;Server offline
+			ExitLoop
+		WEnd
+	Next
 
 	TCPShutdown()
 	$oObj.Finished()
@@ -1336,6 +1468,7 @@ EndFunc
 Func _Quitting()
 	AdlibUnRegister("_ServerCheck")
 	AdlibUnRegister("_CheckForUpdateMaster")
+	$oServers.Save()
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", GUICtrlRead($idSeconds))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", BitAnd(GUICtrlRead($idFlashWin), $GUI_CHECKED))
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", BitAnd(GUICtrlRead($idCountTray), $GUI_CHECKED))
@@ -1383,7 +1516,7 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 					$iIndex = DllStructGetData($tInfo, "Index")
 					If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
-						IniWrite(@ScriptDir & "\Servers.ini", _GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
+						$oServers.SetEnabled(_GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
 					EndIf
 
 					If $iListviewIndex <> -1 Then
