@@ -53,8 +53,8 @@ Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
 Opt("GUIResizeMode", $GUI_DOCKALL)
 
-Global Enum $eServer, $ePort, $eEnabled, $eProtocol, $eSRVData
-Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3
+Global Enum $eServer, $ePort, $eEnabled, $eProtocol, $eSRVData, $eProtocolCurrent, $eServerlistMaxCol
+Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3, $eProtocolMax
 
 Global $sMyCLSID = "AutoIt.ServerChecker"
 Global $sMyCLSID2 = "AutoIt.ServerCheckerList"
@@ -133,8 +133,7 @@ $idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
 GUICtrlCreateMenuItem("", $idServerContext)
 GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
 GUICtrlSetState(-1, $GUI_DISABLE)
-Local $idServerMenuAuto = GUICtrlCreateMenuItem("Automatic (not implemented)", $idServerContext)
-GUICtrlSetState(-1, $GUI_DISABLE)
+Local $idServerMenuAuto = GUICtrlCreateMenuItem("Automatic", $idServerContext)
 Local $idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
 Local $idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
 Local $idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
@@ -143,7 +142,7 @@ _IniClean()
 
 Local $oServers = _Servers()
 $oServers.ConvertINI()
-If UBound($oServers.List) = 0 Then $oServers.Load()
+$oServers.Load()
 
 For $iX = 0 To UBound($oServers.List) -1
 	GUICtrlCreateListViewItem($oServers.List[$iX][$eServer] & "|" & $oServers.List[$iX][$ePort], $idServers)
@@ -169,6 +168,7 @@ Func _Servers()
     $oClassObject.AddMethod("Save", "_ServersSave")
     $oClassObject.AddMethod("SetEnabled", "_ServersSetEnabled")
     $oClassObject.AddMethod("SetProtocol", "_ServersSetProtocol")
+	$oClassObject.AddMethod("SetProtocolCurrent", "_ServersSetProtocolCurrent")
     $oClassObject.AddMethod("Enabled", "_ServersEnabled")
 
     Return $oClassObject.Object
@@ -196,7 +196,7 @@ EndFunc
 
 Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $sProtocol)
 	Local $avList = $oSelf.List, $iUBound = UBound($avList)
-	ReDim $avList[$iUBound +1][4]
+	ReDim $avList[$iUBound +1][$eServerlistMaxCol]
 	$avList[$iUBound][$eServer] = $sServer
 	$avList[$iUBound][$ePort] = $sPort
 	$avList[$iUBound][$eEnabled] = $bEnabled
@@ -219,13 +219,20 @@ Func _ServersDelete($oSelf, $sServer, $sPort)
 EndFunc
 
 Func _ServersLoad($oSelf)
-	$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
-	If $avTemp = 0 Then Return
-	$oSelf.List = $avTemp
+	If UBound($oSelf.List) = 0 Then
+		$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
+		If $avTemp = 0 Then Return
+		$oSelf.List = $avTemp
+	EndIf
+
+	Local $avList = $oSelf.List
+	ReDim $avList[UBound($avList)][$eServerlistMaxCol]
+	$oSelf.List = $avList
 EndFunc
 
 Func _ServersSave($oSelf)
 	$avTemp = $oSelf.List
+	ReDim $avTemp[UBound($avTemp)][4]
 	Pickle($avTemp, @ScriptDir & "\Servers.dat")
 EndFunc
 
@@ -251,6 +258,17 @@ Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
 	Next
 EndFunc
 
+Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $sProtocolCurrent)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eProtocolCurrent] = $sProtocolCurrent
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
 Func _ServersEnabled($oSelf)
 	Local $asRet = $oSelf.List
 
@@ -266,7 +284,7 @@ EndFunc
 Func _IniServerStuffToServerlistStuff($sText)
 	Switch $sText
 		Case "False"
-			Local $avRet[2] = [False, "Auto"]
+			Local $avRet[2] = [False, $eProtocolAuto]
 		Case "Old"
 			Local $avRet[2] = [True, $eProtocol1]
 		Case "True"
@@ -484,13 +502,13 @@ While 1
 		Case $idServerShowPopup
 			_ServerPopupShow()
 		Case $idServerMenuAuto
-			_ServerVersionSet("Auto")
+			_ServerVersionSet($eProtocolAuto)
 		Case $idServerMenuOld
-			_ServerVersionSet("1")
+			_ServerVersionSet($eProtocol1)
 		Case $idServerMenuTrue
-			_ServerVersionSet("2")
+			_ServerVersionSet($eProtocol2)
 		Case $idServerMenuNew
-			_ServerVersionSet("3")
+			_ServerVersionSet($eProtocol3)
 		Case $cIdHints
 			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 		Case $cIdSettings
@@ -692,29 +710,39 @@ Func _ServerScanner()
 	Local $iTimeoutMS = $iTimeoutSeconds * 1000
 
 	For $iY = 0 To UBound($avList) -1
+		If $avList[$iY][$eProtocol] < $eProtocolAuto Or $avList[$iY][$eProtocol] >= $eProtocolMax Then
+			$oObj.Log("Possible corruption in Servers.dat; unknown protocol (" & $avList[$iY][$eProtocol] & ") for " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort])
+			ContinueLoop
+		EndIf
+
 		If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
 			$iSocket = _TCPConnect($avList[$iY][$eServer], $avList[$iY][$ePort], $iTimeoutMS)
 		Else
 			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
 		EndIf
 		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
-		If $avList[$iY][$eProtocol] = $eProtocol1 Then   ;pre 1.4 protocol
+
+		If $avList[$iY][$eProtocol] = $eProtocolAuto Then
+			$avList[$iY][$eProtocolCurrent] -= 1
+			If $avList[$iY][$eProtocolCurrent] < $eProtocol1 Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
+
+			$oList.SetProtocolCurrent($avList[$iY][$eServer], $avList[$iY][$ePort], $avList[$iY][$eProtocolCurrent])
+		EndIf
+
+		If $avList[$iY][$eProtocol] = $eProtocol1 Or $avList[$iY][$eProtocolCurrent] = $eProtocol1 Then   ;pre 1.4 protocol
 			$oObj.Log("pre 1.4 protocol")
 			TCPSend($iSocket, Binary("0xFE"))
-		ElseIf $avList[$iY][$eProtocol] = $eProtocol3 Then   ;1.7+ protocol
+		ElseIf $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
 			$oObj.Log("1.7+ protocol")
 			$bTemp = Binary("0x0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01" & "0100"
 			$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
-			$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01"   ;first byte (0x!0E!0004) should be total length
+			;first byte (0x!0E!0004) should be total length
+			$bHandshake = Binary("0x0E0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01"
 			$bRequest = "0100"
 			TCPSend($iSocket, $bTemp)
-		ElseIf $avList[$iY][$eProtocol] = $eProtocol2 Then   ;1.4 - 1.7 protocol
+		ElseIf $avList[$iY][$eProtocol] = $eProtocol2 Or $avList[$iY][$eProtocolCurrent] = $eProtocol2 Then   ;1.4 - 1.7 protocol
 			$oObj.Log("1.4 - 1.7 protocol")
 			TCPSend($iSocket, Binary("0xFE01"))
-		ElseIf $avList[$iY][$eProtocol] = $eProtocolAuto Then
-			$oObj.Log("Automatic protocol finder not implemented")
-		Else
-			$oObj.Log("Servers.dat either corrupted or manually edited by a schmuck")
 		EndIf
 
 		Local $iTimeOut = TimerInit()
@@ -731,7 +759,7 @@ Func _ServerScanner()
 
 				If $dRet <> "" Then
 
-					If $avList[$iY][$eProtocol] = $eProtocol3 Then   ;1.7+ protocol
+					If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
 
 						Do
 							Sleep(500)
@@ -805,20 +833,29 @@ Func _ServerScanner()
 							$oObj.Icon($avList[$iY][$eServer], $avList[$iY][$ePort], $dPng)
 						EndIf
 
-						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)   ;Server online (1.7+ protocol)
+						;Server online (1.7+ protocol)
+						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)
+						If $avList[$iY][$eProtocol] = $eProtocolAuto Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
 						TCPCloseSocket($iSocket)
 						ExitLoop 2
 					Else   ;Pre 1.7 protocols
 						$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
 
 						If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
-							If StringReplace($aRet[3], ".", "") >= 170 Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
 							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
+							If StringReplace($aRet[3], ".", "") >= 170 Then
+								$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
+							ElseIf $avList[$iY][$eProtocol] = $eProtocolAuto Then
+								$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol2)
+							EndIf
 						Else   ;pre 1.4 protocol
 							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 							If UBound($aRet) = 4 Then
-								If $avList[$iY][$eProtocol] = $eProtocol2 Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
 								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
+								Switch $avList[$iY][$eProtocol]
+									Case $eProtocol2, $eProtocolAuto
+										$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
+								EndSwitch
 							Else
 								$oObj.Log("Error")
 								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "Error", "Error", "Error", "Error")   ;Error
