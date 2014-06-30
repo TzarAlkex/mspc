@@ -1081,6 +1081,9 @@ Func _MCStringClean(ByRef $sText, $dKeepColors = False)
 		$iReplacements += @extended
 	EndIf
 
+	$sText = StringReplace($sText, @CR, "")
+	$sText = StringReplace($sText, @LF, "")
+
 	Return $iReplacements
 EndFunc
 
