@@ -1,3 +1,8 @@
+0.0.0.19
+*Servers.ini is now Servers.dat (more flexible, efficient and breakable; we will see how that works out)
+*Added support for SRV records
+*Added automatic detection of server protocol
+*MOTD improved.
 0.0.0.18
 *Improved 1.7 support
 *Added manually setting MC version to server right-click menu

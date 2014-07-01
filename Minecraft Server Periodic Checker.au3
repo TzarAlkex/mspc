@@ -5,7 +5,7 @@
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
 #AutoIt3Wrapper_Res_Description=Alert user when his favorite Minecraft server goes online
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.18
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.19
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Res_File_Add=cog.png, rt_rcdata, SETTINGS
 #AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
@@ -48,6 +48,7 @@
 #include <InetConstants.au3>
 #include <FontConstants.au3>
 #include "AutoIt Pickler.au3"
+#include "SRV_Records.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -169,6 +170,7 @@ Func _Servers()
     $oClassObject.AddMethod("SetEnabled", "_ServersSetEnabled")
     $oClassObject.AddMethod("SetProtocol", "_ServersSetProtocol")
 	$oClassObject.AddMethod("SetProtocolCurrent", "_ServersSetProtocolCurrent")
+	$oClassObject.AddMethod("SetSRVData", "_ServersSetSRVData")
     $oClassObject.AddMethod("Enabled", "_ServersEnabled")
 
     Return $oClassObject.Object
@@ -263,6 +265,17 @@ Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $sProtocolCurrent)
 		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
 			$avList = $oSelf.List
 			$avList[$iX][$eProtocolCurrent] = $sProtocolCurrent
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersSetSRVData($oSelf, $sServer, $sPort, $avTemp)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eSRVData] = $avTemp
 			$oSelf.List = $avList
 			ExitLoop
 		EndIf
@@ -470,7 +483,7 @@ While 1
 				ContinueLoop
 			ElseIf UBound($asAddress) = 1 Then
 				ReDim $asAddress[2]
-				$asAddress[1] = $iDefaultPort
+				$asAddress[1] = ""
 			EndIf
 
 			Local $iIndex = -1
@@ -697,7 +710,7 @@ Func _ScanningCrashedReset()
 EndFunc
 
 Func _ServerScanner()
-	Local $iSocket
+	Local $iSocket, $iFakePort
 	Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
 	Local $oList = ObjGet($sMyCLSID2 & "." & $CmdLine[2])
 
@@ -715,12 +728,38 @@ Func _ServerScanner()
 			ContinueLoop
 		EndIf
 
+		$iFakePort = False
+
+		If $avList[$iY][$ePort] = "" Then
+			If IsArray($avList[$iY][$eSRVData]) Then
+				$avTemp = $avList[$iY][$eSRVData]
+				$avList[$iY][$ePort] = $avTemp[0][2]
+				$iFakePort = True
+			Else
+				$avSRV = SRVRecords("_minecraft._tcp." & $avList[$iY][$eServer])
+
+				For $iX = 0 To UBound($avSRV) - 1
+					$oObj.Log("SRV Priority:" & $avSRV[$iX][0] & " Weight:" & $avSRV[$iX][1] & " Port:" & $avSRV[$iX][2] & " Target:" & $avSRV[$iX][3])
+				Next
+
+				If IsArray($avSRV) Then
+					$oList.SetSRVData($avList[$iY][$eServer], $avList[$iY][$ePort], $avSRV)
+					$avList[$iY][$ePort] = $avSRV[0][2]
+				Else
+					$avList[$iY][$ePort] = 25565
+				EndIf
+				$iFakePort = True
+			EndIf
+		EndIf
+
 		If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
 			$iSocket = _TCPConnect($avList[$iY][$eServer], $avList[$iY][$ePort], $iTimeoutMS)
 		Else
 			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
 		EndIf
 		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
+
+		If $iFakePort Then $avList[$iY][$ePort] = ""
 
 		If $avList[$iY][$eProtocol] = $eProtocolAuto Then
 			$avList[$iY][$eProtocolCurrent] -= 1
@@ -1679,7 +1718,7 @@ Func _CheckForUpdate()
 	$aRet = StringSplit($sFile, "|")
 	If @error Then Return False
 	If $aRet[0] <> 2 Then Return False
-	If $aRet[1] <= 18 Then Return False   ;Version
+	If $aRet[1] <= 19 Then Return False   ;Version
 
 	$sUpdateLink = $aRet[2]
 	Return True
