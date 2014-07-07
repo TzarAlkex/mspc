@@ -16,7 +16,7 @@
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#Obfuscator_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide
+#Obfuscator_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide, _ServersConvertINI, _ServersAdd, _ServersDelete, _ServersLoad, _ServersSave, _ServersSetEnabled, _ServersSetProtocol, _ServersSetProtocolCurrent, _ServersSetSRVData, _ServersEnabled
 
 #cs ----------------------------------------------------------------------------
 
