@@ -784,14 +784,13 @@ Func _ServerScanner()
 			TCPSend($iSocket, Binary("0xFE01"))
 		EndIf
 
-		Local $iTimeOut = TimerInit()
-
 		While 1
 			While 1
-				Sleep(1500)
+				Sleep(500)
 				$dRet = TCPRecv($iSocket, 1500, 1)
 				$error = @error
-				If $error <> -1 And $error <> 0 Or TimerDiff($iTimeOut) > $iTimeoutMS And $dRet = "" Then
+				$oObj.Log("TCPRecv @error: " & $error)
+				If $error <> 0 Then
 					TCPCloseSocket($iSocket)
 					ExitLoop
 				EndIf
@@ -801,9 +800,11 @@ Func _ServerScanner()
 					If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
 
 						Do
-							Sleep(500)
+							Sleep(100)
 							$dRet &= TCPRecv($iSocket, 1500, 1)
-						Until @error <> 0
+							$error = @error
+							$oObj.Log("TCPRecv @error: " & $error)
+						Until $error <> 0
 
 						$oObj.Log("JSON START")
 						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
