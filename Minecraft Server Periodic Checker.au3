@@ -192,7 +192,7 @@ Func _ServersConvertINI($oSelf)
 		Local $avTemp = $oSelf.List
 
 		Pickle($avTemp, @ScriptDir & "\Servers.dat")
-		FileDelete(@ScriptDir & "\Servers.ini")
+		FileMove(@ScriptDir & "\Servers.ini", @ScriptDir & "\Servers_old.ini")
 	EndIf
 EndFunc
 
