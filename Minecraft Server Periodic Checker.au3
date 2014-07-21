@@ -991,7 +991,7 @@ Func _GUIMainLoop()
 				Next
 				Exit
 			Case $GUI_EVENT_PRIMARYDOWN
-				If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED And $iMessage[1] = $hGui Then
+				If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED And _WinAPI_PtInRectEx($iMessage[3], $iMessage[4], 500, $iGuiY - 35, 605, $iGuiY - 10) = 0 And $iMessage[1] = $hGui Then
 					GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25B2))
 					GUISetState(@SW_HIDE, $hSettingsGui)
 					_GUICtrlButton_SetCheck($cIdSettings, $BST_UNCHECKED)
