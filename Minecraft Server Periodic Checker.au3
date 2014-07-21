@@ -54,6 +54,8 @@ Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
 Opt("GUIResizeMode", $GUI_DOCKALL)
 
+Global Const $iDefaultPort = 25565
+
 Global Enum $eServer, $ePort, $eEnabled, $eProtocol, $eSRVData, $eProtocolCurrent, $eServerlistMaxCol
 Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3, $eProtocolMax
 
@@ -86,7 +88,7 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 
 
-Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2]
+Global $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2]
 
 ;Main GUI
 Global $hGui, $iGuiY, $aiGuiMin
@@ -273,7 +275,7 @@ Func _ServerScanner()
 					$oList.SetSRVData($avList[$iY][$eServer], $avList[$iY][$ePort], $avSRV)
 					$avList[$iY][$ePort] = $avSRV[0][2]
 				Else
-					$avList[$iY][$ePort] = 25565
+					$avList[$iY][$ePort] = $iDefaultPort
 				EndIf
 				$iFakePort = True
 			EndIf
@@ -1245,8 +1247,8 @@ EndFunc
 #Region   ;GUI stuff internals
 
 ;==================================================================================================================================
-; Author ........: AdmiralAlkex
-; Modified.......:
+; Author ........: UEZ
+; Modified.......: progandy, AdmiralAlkex
 ;===================================================================================================================================
 Func _GDIPlus_ImageCreateFromMemory($bImage)
 	If Not IsBinary($bImage) Then Return SetError(1, 0, 0)
