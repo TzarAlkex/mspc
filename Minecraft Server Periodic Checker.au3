@@ -1,6 +1,5 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
@@ -49,6 +48,7 @@
 #include <FontConstants.au3>
 #include "AutoIt Pickler.au3"
 #include "SRV_Records.au3"
+#include <WinAPIShellEx.au3>
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -78,28 +78,6 @@ Global $hBitmap, $hImage, $hGraphic
 $hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
 $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
-
-Global Const $tagNOTIFYICONDATA = "dword Size;" & _
-        "hwnd Wnd;" & _
-        "uint ID;" & _
-        "uint Flags;" & _
-        "uint CallbackMessage;" & _
-        "ptr Icon;" & _
-        "wchar Tip[128];" & _
-        "dword State;" & _
-        "dword StateMask;" & _
-        "wchar Info[256];" & _
-        "uint Timeout;" & _
-        "wchar InfoTitle[64];" & _
-        "dword InfoFlags;" & _
-        "dword Data1;word Data2;word Data3;byte Data4[8];" & _
-        "ptr BalloonIcon"
-
-Global Const $NIM_ADD = 0
-Global Const $NIM_MODIFY = 1
-
-Global Const $NIF_MESSAGE = 1
-Global Const $NIF_ICON = 2
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
@@ -157,159 +135,6 @@ If _GUICtrlListView_GetItemCount($idServers) > 0 Then
 	_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
 EndIf
 
-Func _Servers()
-	Local $avServers[0][0]
-
-    Local $oClassObject = _AutoItObject_Class()
-	$oClassObject.AddProperty("List", $ELSCOPE_READONLY, $avServers)
-    $oClassObject.AddMethod("ConvertINI", "_ServersConvertINI")
-	$oClassObject.AddMethod("Add", "_ServersAdd")
-	$oClassObject.AddMethod("Delete", "_ServersDelete")
-    $oClassObject.AddMethod("Load", "_ServersLoad")
-    $oClassObject.AddMethod("Save", "_ServersSave")
-    $oClassObject.AddMethod("SetEnabled", "_ServersSetEnabled")
-    $oClassObject.AddMethod("SetProtocol", "_ServersSetProtocol")
-	$oClassObject.AddMethod("SetProtocolCurrent", "_ServersSetProtocolCurrent")
-	$oClassObject.AddMethod("SetSRVData", "_ServersSetSRVData")
-    $oClassObject.AddMethod("Enabled", "_ServersEnabled")
-
-    Return $oClassObject.Object
-EndFunc   ;==>_SomeObject
-
-Func _ServersConvertINI($oSelf)
-	Local $asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
-	If @error Then Return
-	For $iX = 1 To $asServers[0]
-		Local $asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
-		If @error Then ContinueLoop
-		For $iY = 1 To $asPorts[0][0]
-			Local $avStuff = _IniServerStuffToServerlistStuff($asPorts[$iY][1])
-			$oSelf.Add($asServers[$iX], $asPorts[$iY][0], $avStuff[0], $avStuff[1])
-		Next
-	Next
-
-	If UBound($oSelf.List) > 0 Then
-		Local $avTemp = $oSelf.List
-
-		Pickle($avTemp, @ScriptDir & "\Servers.dat")
-		FileMove(@ScriptDir & "\Servers.ini", @ScriptDir & "\Servers_old.ini")
-	EndIf
-EndFunc
-
-Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $sProtocol)
-	Local $avList = $oSelf.List, $iUBound = UBound($avList)
-	ReDim $avList[$iUBound +1][$eServerlistMaxCol]
-	$avList[$iUBound][$eServer] = $sServer
-	$avList[$iUBound][$ePort] = $sPort
-	$avList[$iUBound][$eEnabled] = $bEnabled
-	$avList[$iUBound][$eProtocol] = $sProtocol
-
-	$oSelf.List = $avList
-EndFunc
-
-Func _ServersDelete($oSelf, $sServer, $sPort)
-	Local $avList = $oSelf.List
-
-	For $iX = 0 To UBound($avList) -1
-		If $avList[$iX][$eServer] = $sServer And $avList[$iX][$ePort] = $sPort Then
-			_ArrayDelete($avList, $iX)
-			ExitLoop
-		EndIf
-	Next
-
-	$oSelf.List = $avList
-EndFunc
-
-Func _ServersLoad($oSelf)
-	If UBound($oSelf.List) = 0 Then
-		$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
-		If $avTemp = 0 Then Return
-		$oSelf.List = $avTemp
-	EndIf
-
-	Local $avList = $oSelf.List
-	ReDim $avList[UBound($avList)][$eServerlistMaxCol]
-	$oSelf.List = $avList
-EndFunc
-
-Func _ServersSave($oSelf)
-	$avTemp = $oSelf.List
-	ReDim $avTemp[UBound($avTemp)][4]
-	Pickle($avTemp, @ScriptDir & "\Servers.dat")
-EndFunc
-
-Func _ServersSetEnabled($oSelf, $sServer, $sPort, $bEnabled)
-	For $iX = 0 To UBound($oSelf.List) -1
-		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
-			$avList = $oSelf.List
-			$avList[$iX][$eEnabled] = $bEnabled
-			$oSelf.List = $avList
-			ExitLoop
-		EndIf
-	Next
-EndFunc
-
-Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
-	For $iX = 0 To UBound($oSelf.List) -1
-		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
-			$avList = $oSelf.List
-			$avList[$iX][$eProtocol] = $sProtocol
-			$oSelf.List = $avList
-			ExitLoop
-		EndIf
-	Next
-EndFunc
-
-Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $sProtocolCurrent)
-	For $iX = 0 To UBound($oSelf.List) -1
-		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
-			$avList = $oSelf.List
-			$avList[$iX][$eProtocolCurrent] = $sProtocolCurrent
-			$oSelf.List = $avList
-			ExitLoop
-		EndIf
-	Next
-EndFunc
-
-Func _ServersSetSRVData($oSelf, $sServer, $sPort, $avTemp)
-	For $iX = 0 To UBound($oSelf.List) -1
-		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
-			$avList = $oSelf.List
-			$avList[$iX][$eSRVData] = $avTemp
-			$oSelf.List = $avList
-			ExitLoop
-		EndIf
-	Next
-EndFunc
-
-Func _ServersEnabled($oSelf)
-	Local $asRet = $oSelf.List
-
-	For $iX = UBound($asRet) -1 To 0 Step -1
-		If Not $asRet[$iX][$eEnabled] Then
-			_ArrayDelete($asRet, $iX)
-		EndIf
-	Next
-
-	Return $asRet
-EndFunc
-
-Func _IniServerStuffToServerlistStuff($sText)
-	Switch $sText
-		Case "False"
-			Local $avRet[2] = [False, $eProtocolAuto]
-		Case "Old"
-			Local $avRet[2] = [True, $eProtocol1]
-		Case "True"
-			Local $avRet[2] = [True, $eProtocol2]
-		Case "New"
-			Local $avRet[2] = [True, $eProtocol3]
-		Case Else
-			_Log("Servers.ini either corrupted or manually edited by a schmuck")
-	EndSwitch
-
-	Return $avRet
-EndFunc
 
 Local $sSecondsBetweenScans
 Local $sMinutesBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans", "IsglassIsTasty")
@@ -458,7 +283,7 @@ GUIRegisterMsg($WM_COMMAND, "_WM_COMMAND")
 GUIRegisterMsg($WM_GETMINMAXINFO, "_WM_GETMINMAXINFO")
 OnAutoItExitRegister("_Quitting")
 
-Global $oObject = _SomeObject()
+Global $oObject = _ServerObject()
 _AutoItObject_RegisterObject($oObject, $sMyCLSID & "." & @AutoItPID)
 _AutoItObject_RegisterObject($oServers, $sMyCLSID2 & "." & @AutoItPID)
 
@@ -548,18 +373,7 @@ While 1
 	EndSwitch
 WEnd
 
-Func _ServerDelete()
-	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
-	If $aiListviewSelected[0] = 0 Then
-		MsgBox(48, StringTrimRight(@ScriptName, 4), "No server selected", 0, $hGui)
-		Return
-	EndIf
-
-	For $iX = $aiListviewSelected[0] To 1 Step -1
-		$oServers.Delete(_GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX]), _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1))
-		_GUICtrlListView_DeleteItem($idServers, $aiListviewSelected[$iX])
-	Next
-EndFunc
+#Region   ;Server bars
 
 Func _ServerPopupShow()
 	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
@@ -596,24 +410,6 @@ Func _ServerPopupAdd($sServerAddress, $sPort, $iY)
 	$avPopups[UBound($avPopups) -1][3] = _WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[UBound($avPopups) -1][4]), $GWL_WNDPROC, DllCallbackGetPtr($avPopups[UBound($avPopups) -1][2]))
 EndFunc
 
-Func _ServerVersionSet($sValue)
-	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
-	If $aiListviewSelected[0] = 0 Then
-		MsgBox(48, StringTrimRight(@ScriptName, 4), "No server selected", 0, $hGui)
-		Return
-	EndIf
-
-	Local $sServer, $sPort
-
-	For $iX = $aiListviewSelected[0] To 1 Step -1
-		_GUICtrlListView_SetItemChecked($idServers, $aiListviewSelected[$iX])
-
-		$sServer = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
-		$sPort = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
-		$oServers.SetProtocol($sServer, $sPort, $sValue)
-	Next
-EndFunc
-
 Func _LabelProc($hWnd, $iMsg, $iwParam, $ilParam)
 	If $iSkipLabelProc Then Return 0
 
@@ -635,6 +431,10 @@ Func _LabelProc($hWnd, $iMsg, $iwParam, $ilParam)
 	Return _WinAPI_CallWindowProc($avPopups[$iX][3], $hWnd, $iMsg, $iwParam, $ilParam)
 EndFunc
 
+#EndRegion
+
+#Region   ;Network stuff
+
 Func _ServerCheck()
 	For $iX = 0 To UBound($asServerInfo) -1
 		_WinAPI_DeleteObject($asServerInfo[0][1])
@@ -654,41 +454,6 @@ Func _ServerCheck()
 	Else
 		$iPid = Run(@AutoItExe & ' "' & @ScriptFullPath & '" /ServerScanner ' & @AutoItPID)
 	EndIf
-EndFunc
-
-Func _HintRemove()
-	Local $sText = GUICtrlRead($cIdHints)
-
-	If StringLen($sText) = 0 Then
-		AdlibUnRegister("_HintRemove")
-		$asHint[0] += 1
-		If $asHint[0] = UBound($asHint) Then $asHint[0] = 1
-		If $asHint[$asHint[0]] = "Update found, click to open website" Then
-			GUICtrlSetCursor($cIdHints, 0)
-			GUICtrlSetColor($cIdHints, 0x0000EE)
-			GUICtrlSetFont($cIdHints, Default, $FW_DONTCARE, $GUI_FONTUNDER)
-		Else
-			GUICtrlDelete($cIdHints)
-			GUISwitch($hGui)
-			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
-		EndIf
-		_HintAdd()
-		AdlibRegister("_HintAdd", 20)
-		Return
-	EndIf
-
-	GUICtrlSetData($cIdHints, StringTrimRight($sText, 1))
-EndFunc
-
-Func _HintAdd()
-	Local $iLength = StringLen(GUICtrlRead($cIdHints))
-
-	If $iLength = StringLen($asHint[$asHint[0]]) Then
-		AdlibUnRegister("_HintAdd")
-		Return
-	EndIf
-
-	GUICtrlSetData($cIdHints, StringLeft($asHint[$asHint[0]], $iLength +1))
 EndFunc
 
 Func _WorkingAnimation()
@@ -920,21 +685,6 @@ Func _ServerScanner()
 	Exit
 EndFunc
 
-Func _IniClean();_IniClean($oObj)
-	$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
-	If Not @error Then
-		For $iX = 1 To $asServers[0]
-			$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
-			If @error Then
-				IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX])
-				ContinueLoop
-			EndIf
-
-			IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
-		Next
-	EndIf
-EndFunc
-
 ;By Beege http://www.autoitscript.com/forum/topic/155546-base64-machine-code-functions-source/
 Func _B64Decode($sSource)
 	Local Static $Opcode, $tMem, $tRevIndex, $fStartup = True
@@ -973,7 +723,11 @@ Func _B64Decode($sSource)
 	Return BinaryMid(DllStructGetData($tOutput, 1), 1, $aRet[0])
 EndFunc   ;==>_B64Decode
 
-Func _SomeObject()
+#EndRegion
+
+#Region   ;ServerObject
+
+Func _ServerObject()
     Local $oClassObject = _AutoItObject_Class()
     $oClassObject.AddMethod("Mod", "_ServerMod")
     $oClassObject.AddMethod("Log", "_ServerLog")
@@ -982,7 +736,7 @@ Func _SomeObject()
     $oClassObject.AddMethod("Results", "_ServerResults")
     $oClassObject.AddMethod("Finished", "_ServerFinished")
     Return $oClassObject.Object
-EndFunc   ;==>_SomeObject
+EndFunc   ;==>_ServerObject
 
 Func _ServerMod($oSelf, $sServerAddress, $iServerPort, $sType, $asMods)
 	_Log("_ServerMod: Type " & $sType)
@@ -1110,24 +864,168 @@ Func _ServerFinished($oSelf)
 	GUICtrlSetState($idScanNow, $GUI_ENABLE)
 EndFunc
 
-Func _MCStringClean(ByRef $sText, $dKeepColors = False)
-	Local $iReplacements = 0
+#EndRegion
 
-	$sText = StringReplace($sText, "Â", "")
-	$iReplacements += @extended
+#Region   ;Serverlist
 
-	If Not $dKeepColors Then
-		$sText = StringRegExpReplace($sText, "(§.)", "")
-		$iReplacements += @extended
+Func _Servers()
+	Local $avServers[0][0]
+
+    Local $oClassObject = _AutoItObject_Class()
+	$oClassObject.AddProperty("List", $ELSCOPE_READONLY, $avServers)
+    $oClassObject.AddMethod("ConvertINI", "_ServersConvertINI")
+	$oClassObject.AddMethod("Add", "_ServersAdd")
+	$oClassObject.AddMethod("Delete", "_ServersDelete")
+    $oClassObject.AddMethod("Load", "_ServersLoad")
+    $oClassObject.AddMethod("Save", "_ServersSave")
+    $oClassObject.AddMethod("SetEnabled", "_ServersSetEnabled")
+    $oClassObject.AddMethod("SetProtocol", "_ServersSetProtocol")
+	$oClassObject.AddMethod("SetProtocolCurrent", "_ServersSetProtocolCurrent")
+	$oClassObject.AddMethod("SetSRVData", "_ServersSetSRVData")
+    $oClassObject.AddMethod("Enabled", "_ServersEnabled")
+
+    Return $oClassObject.Object
+EndFunc   ;==>_Servers
+
+Func _ServersConvertINI($oSelf)
+	Local $asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
+	If @error Then Return
+	For $iX = 1 To $asServers[0]
+		Local $asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
+		If @error Then ContinueLoop
+		For $iY = 1 To $asPorts[0][0]
+			Local $avStuff = _IniServerStuffToServerlistStuff($asPorts[$iY][1])
+			$oSelf.Add($asServers[$iX], $asPorts[$iY][0], $avStuff[0], $avStuff[1])
+		Next
+	Next
+
+	If UBound($oSelf.List) > 0 Then
+		Local $avTemp = $oSelf.List
+
+		Pickle($avTemp, @ScriptDir & "\Servers.dat")
+		FileMove(@ScriptDir & "\Servers.ini", @ScriptDir & "\Servers_old.ini")
 	EndIf
-
-	$sText = StringReplace($sText, @CR, "")
-	$sText = StringReplace($sText, @LF, "")
-
-	Return $iReplacements
 EndFunc
 
-#region
+Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $sProtocol)
+	Local $avList = $oSelf.List, $iUBound = UBound($avList)
+	ReDim $avList[$iUBound +1][$eServerlistMaxCol]
+	$avList[$iUBound][$eServer] = $sServer
+	$avList[$iUBound][$ePort] = $sPort
+	$avList[$iUBound][$eEnabled] = $bEnabled
+	$avList[$iUBound][$eProtocol] = $sProtocol
+
+	$oSelf.List = $avList
+EndFunc
+
+Func _ServersDelete($oSelf, $sServer, $sPort)
+	Local $avList = $oSelf.List
+
+	For $iX = 0 To UBound($avList) -1
+		If $avList[$iX][$eServer] = $sServer And $avList[$iX][$ePort] = $sPort Then
+			_ArrayDelete($avList, $iX)
+			ExitLoop
+		EndIf
+	Next
+
+	$oSelf.List = $avList
+EndFunc
+
+Func _ServersLoad($oSelf)
+	If UBound($oSelf.List) = 0 Then
+		$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
+		If $avTemp = 0 Then Return
+		$oSelf.List = $avTemp
+	EndIf
+
+	Local $avList = $oSelf.List
+	ReDim $avList[UBound($avList)][$eServerlistMaxCol]
+	$oSelf.List = $avList
+EndFunc
+
+Func _ServersSave($oSelf)
+	$avTemp = $oSelf.List
+	ReDim $avTemp[UBound($avTemp)][4]
+	Pickle($avTemp, @ScriptDir & "\Servers.dat")
+EndFunc
+
+Func _ServersSetEnabled($oSelf, $sServer, $sPort, $bEnabled)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eEnabled] = $bEnabled
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eProtocol] = $sProtocol
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $sProtocolCurrent)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eProtocolCurrent] = $sProtocolCurrent
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersSetSRVData($oSelf, $sServer, $sPort, $avTemp)
+	For $iX = 0 To UBound($oSelf.List) -1
+		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
+			$avList = $oSelf.List
+			$avList[$iX][$eSRVData] = $avTemp
+			$oSelf.List = $avList
+			ExitLoop
+		EndIf
+	Next
+EndFunc
+
+Func _ServersEnabled($oSelf)
+	Local $asRet = $oSelf.List
+
+	For $iX = UBound($asRet) -1 To 0 Step -1
+		If Not $asRet[$iX][$eEnabled] Then
+			_ArrayDelete($asRet, $iX)
+		EndIf
+	Next
+
+	Return $asRet
+EndFunc
+
+Func _IniServerStuffToServerlistStuff($sText)
+	Switch $sText
+		Case "False"
+			Local $avRet[2] = [False, $eProtocolAuto]
+		Case "Old"
+			Local $avRet[2] = [True, $eProtocol1]
+		Case "True"
+			Local $avRet[2] = [True, $eProtocol2]
+		Case "New"
+			Local $avRet[2] = [True, $eProtocol3]
+		Case Else
+			_Log("Servers.ini either corrupted or manually edited by a schmuck")
+	EndSwitch
+
+	Return $avRet
+EndFunc
+
+#EndRegion
+
+#Region   ;GUI stuff
+
 Func _ServerInfoShow($iIndex)
 	Local $iFlag = False
 
@@ -1239,15 +1137,75 @@ Func _DownloadPlayerImages()
 	EndIf
 EndFunc
 
-Func _NaughtyList($sName)
-	Local $asList[] = ["Pc_Girl"]
+Func _ServerDelete()
+	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
+	If $aiListviewSelected[0] = 0 Then
+		MsgBox(48, StringTrimRight(@ScriptName, 4), "No server selected", 0, $hGui)
+		Return
+	EndIf
 
-	For $iX = 0 To UBound($asList) -1
-		If $asList[$iX] = $sName Then Return 1
+	For $iX = $aiListviewSelected[0] To 1 Step -1
+		$oServers.Delete(_GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX]), _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1))
+		_GUICtrlListView_DeleteItem($idServers, $aiListviewSelected[$iX])
 	Next
-
-	Return 0
 EndFunc
+
+Func _ServerVersionSet($sValue)
+	$aiListviewSelected = _GUICtrlListView_GetSelectedIndices($idServers, True)
+	If $aiListviewSelected[0] = 0 Then
+		MsgBox(48, StringTrimRight(@ScriptName, 4), "No server selected", 0, $hGui)
+		Return
+	EndIf
+
+	Local $sServer, $sPort
+
+	For $iX = $aiListviewSelected[0] To 1 Step -1
+		_GUICtrlListView_SetItemChecked($idServers, $aiListviewSelected[$iX])
+
+		$sServer = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX])
+		$sPort = _GUICtrlListView_GetItemText($idServers, $aiListviewSelected[$iX], 1)
+		$oServers.SetProtocol($sServer, $sPort, $sValue)
+	Next
+EndFunc
+
+Func _AvatarsDeleteALL()
+	FileDelete(@ScriptDir & "\TemporaryFiles\*.png")
+EndFunc
+
+;Thx to Mat for code to use a bitmap instead of a file for tray icon http://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
+Func _TraySet($sText)
+	_GDIPlus_GraphicsClear($hGraphic, 0xFFFFFFFF)
+
+	$hFamily = _GDIPlus_FontFamilyCreate('Arial')
+	$hFont = _GDIPlus_FontCreate($hFamily, 16, 1, 2)
+	$tLayout = _GDIPlus_RectFCreate(0, 0, 0, 0)
+	$hFormat = _GDIPlus_StringFormatCreate()
+	$hBrush = _GDIPlus_BrushCreateSolid(0xFF000000)
+	$aData = _GDIPlus_GraphicsMeasureString($hGraphic, $sText, $hFont, $tLayout, $hFormat)
+	$tLayout = $aData[0]
+	DllStructSetData($tLayout, 1, (_GDIPlus_ImageGetWidth($hImage) - DllStructGetData($tLayout, 3)) / 2)
+	DllStructSetData($tLayout, 2, (_GDIPlus_ImageGetHeight($hImage) - DllStructGetData($tLayout, 4)) / 2)
+	_GDIPlus_GraphicsDrawStringEx($hGraphic, $sText, $hFont, $aData[0], $hFormat, $hBrush)
+	_GDIPlus_StringFormatDispose($hFormat)
+	_GDIPlus_FontFamilyDispose($hFamily)
+	_GDIPlus_FontDispose($hFont)
+	_GDIPlus_BrushDispose($hBrush)
+
+	$hIcon = _GDIPlus_HICONCreateFromBitmap($hImage)
+
+	Local $tNOTIFY = DllStructCreate($tagNOTIFYICONDATA)
+	$tNOTIFY.Size = DllStructGetSize($tNOTIFY)
+	$tNOTIFY.hWnd = $TRAY_ICON_GUI
+	$tNOTIFY.ID = $AUT_NOTIFY_ICON_ID
+	$tNOTIFY.hIcon = $hIcon
+	$tNOTIFY.Flags = BitOR($NIF_ICON, $NIF_MESSAGE)
+	$tNOTIFY.CallbackMessage = $AUT_WM_NOTIFYICON
+
+	_WinAPI_ShellNotifyIcon($NIM_MODIFY, $tNOTIFY)
+	_WinAPI_DestroyIcon($hIcon)
+EndFunc
+
+#Region   ;GUI stuff internals
 
 ;==================================================================================================================================
 ; Author ........: AdmiralAlkex
@@ -1296,33 +1254,227 @@ Func _ImageList_AddImageFromResource($hImageList, $sName)
 	Return $iIndex
 EndFunc
 
-Func _AvatarsDeleteALL()
-	FileDelete(@ScriptDir & "\TemporaryFiles\*.png")
+Func _AdlibNaughtyCatShow()
+	AdlibUnRegister(_AdlibNaughtyCatShow)
+
+	GUISetState(@SW_SHOW, $hNaughtyCatGui)
+	AdlibRegister(_AdlibNaughtyCatHide, 5000)
 EndFunc
 
-Func _AvatarsDelete()
-	Local $sTempFolder = @ScriptDir & "\TemporaryFiles\"
-	Local $hSearch = FileFindFirstFile($sTempFolder & "*.png")
-	If $hSearch = -1 Then Return
-
-	Local $sFileName, $sStartDate, $sEndDate = _NowCalc()
-
-	While 1
-		$sFileName = FileFindNextFile($hSearch)
-		If @error Then ExitLoop
-		If @extended Then ContinueLoop
-
-		$asStartDate = FileGetTime($sTempFolder & $sFileName)
-		If @error Then ContinueLoop
-		$iDateCalc = _DateDiff("D", $asStartDate[0] & "/" & $asStartDate[1] & "/" & $asStartDate[2], $sEndDate)
-		If @error Then ContinueLoop
-
-		If $iDateCalc >= 7 Then FileDelete($sTempFolder & $sFileName)
-	WEnd
-
-	FileClose($hSearch)
+Func _AdlibNaughtyCatHide()
+	AdlibUnRegister(_AdlibNaughtyCatHide)
+	GUISetState(@SW_HIDE, $hNaughtyCatGui)
 EndFunc
-#endregion
+
+;Thx to Yashied for Code/Idea on how to handle listview checkboxes http://www.autoitscript.com/forum/topic/110391-listview-get-change-in-checking-items/#entry775483
+;Thx to GaryFrost for Code/Idea on how to handle listview hover event http://www.autoitscript.com/forum/topic/41345-hover-detection-with-listview-is-it-posiible/?p=307598
+Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
+	#forceref $hWnd, $iMsg, $iwParam
+	Local $iIDFrom, $iCode, $tNMHDR, $tInfo, $iIndex
+	Static Local $iState
+
+	$tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
+	$iIDFrom = DllStructGetData($tNMHDR, "IDFrom")
+	$iCode = DllStructGetData($tNMHDR, "Code")
+
+	Switch $iIDFrom
+		Case $idServers
+			Switch $iCode
+				Case $LVN_ITEMCHANGING
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Index")
+					$iState = _GUICtrlListView_GetItemChecked($idServers, $iIndex)
+
+					If $iListviewFlag Then
+						$iListviewIndex = $iIndex
+						$iListviewFlag = False
+					EndIf
+				Case $LVN_ITEMCHANGED
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Index")
+					If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
+						$oServers.SetEnabled(_GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
+					EndIf
+
+					If $iListviewIndex <> -1 Then
+						If $iListviewIndex <> $iIndex Then
+							_ServerInfoShow($iIndex)
+							$iListviewIndex = -1
+						EndIf
+					EndIf
+				Case $LVN_KEYDOWN
+					$iListviewFlag = True
+				Case $NM_CLICK
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$aiHit = _GUICtrlListView_HitTest(GUICtrlGetHandle($idServers))
+					If IsArray($aiHit) And $aiHit[3] = False Then Return $GUI_RUNDEFMSG
+
+					$iIndex = DllStructGetData($tInfo, "Index")
+					_ServerInfoShow($iIndex)
+			EndSwitch
+		Case $idServerPlayers
+			Switch $iCode
+				Case $LVN_HOTTRACK
+					AdlibUnRegister(_AdlibNaughtyCatShow)
+					$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Item")
+					If $iIndex = -1 Then Return $GUI_RUNDEFMSG
+					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyCatShow, 2000)
+			EndSwitch
+	EndSwitch
+	Return $GUI_RUNDEFMSG
+EndFunc   ;==>_WM_NOTIFY
+
+Func _NaughtyList($sName)
+	Local $asList[] = ["Pc_Girl"]
+
+	For $iX = 0 To UBound($asList) -1
+		If $asList[$iX] = $sName Then Return 1
+	Next
+
+	Return 0
+EndFunc
+
+Func _WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
+	#forceref $hWnd, $Msg
+	Local $nNotifyCode = BitShift($wParam, 16)
+	Local $hCtrl = $lParam
+
+	Switch $hCtrl
+		Case $hTimeout
+			Switch $nNotifyCode
+				Case $CBN_EDITCHANGE, $CBN_SELCHANGE
+					IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", GUICtrlRead($cIdTimeout))
+			EndSwitch
+		Case $hCountTray
+			Switch $nNotifyCode
+				Case $BN_CLICKED
+					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
+						Opt("TrayIconHide", 0)
+						_TraySet($iServerTray)
+					Else
+						Opt("TrayIconHide", 1)
+					EndIf
+			EndSwitch
+		Case $hColorizeListview
+			Switch $nNotifyCode
+				Case $BN_CLICKED
+					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
+						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
+							If _GUICtrlListView_GetItemChecked($idServers, $iX) Then
+								If _GUICtrlListView_GetItemText($idServers, $iX, 2) <> "" Then
+									$asSplit = StringSplit(_GUICtrlListView_GetItemText($idServers, $iX, 3), "/")
+									If $asSplit[1] > 0 Then
+										GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0x00FF00)
+									Else
+										GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFFFF33)
+									EndIf
+								Else
+									GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFF0000)
+								EndIf
+							EndIf
+						Next
+					Else
+						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
+							GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFFFFFF)
+						Next
+					EndIf
+			EndSwitch
+	EndSwitch
+
+	Return $GUI_RUNDEFMSG
+EndFunc   ;==>_WM_COMMAND
+
+Func _WM_GETMINMAXINFO($hwnd, $Msg, $wParam, $lParam)
+    $tagMaxinfo = DllStructCreate("int;int;int;int;int;int;int;int;int;int", $lParam)
+    DllStructSetData($tagMaxinfo, 7, $aiGuiMin[2]) ; min X
+    DllStructSetData($tagMaxinfo, 8, $aiGuiMin[3]) ; min Y
+    Return 0
+EndFunc   ;==>WM_GETMINMAXINFO
+
+#EndRegion
+#EndRegion
+
+#Region   ;Hints and Updates
+
+Func _HintRemove()
+	Local $sText = GUICtrlRead($cIdHints)
+
+	If StringLen($sText) = 0 Then
+		AdlibUnRegister("_HintRemove")
+		$asHint[0] += 1
+		If $asHint[0] = UBound($asHint) Then $asHint[0] = 1
+		If $asHint[$asHint[0]] = "Update found, click to open website" Then
+			GUICtrlSetCursor($cIdHints, 0)
+			GUICtrlSetColor($cIdHints, 0x0000EE)
+			GUICtrlSetFont($cIdHints, Default, $FW_DONTCARE, $GUI_FONTUNDER)
+		Else
+			GUICtrlDelete($cIdHints)
+			GUISwitch($hGui)
+			$cIdHints = GUICtrlCreateLabel("", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
+		EndIf
+		_HintAdd()
+		AdlibRegister("_HintAdd", 20)
+		Return
+	EndIf
+
+	GUICtrlSetData($cIdHints, StringTrimRight($sText, 1))
+EndFunc
+
+Func _HintAdd()
+	Local $iLength = StringLen(GUICtrlRead($cIdHints))
+
+	If $iLength = StringLen($asHint[$asHint[0]]) Then
+		AdlibUnRegister("_HintAdd")
+		Return
+	EndIf
+
+	GUICtrlSetData($cIdHints, StringLeft($asHint[$asHint[0]], $iLength +1))
+EndFunc
+
+Func _CheckForUpdateMaster()
+	$iCheck = _CheckForUpdate()
+	If $iCheck Then
+		_UpdateHint("Update found, click to open website")
+	ElseIf $iCheck = False Then
+		_UpdateHint("No update found")
+	EndIf
+EndFunc
+
+Func _CheckForUpdate()
+	Local $asInfo = InetGetInfo($aInet)
+	If $asInfo[2] <> True Then Return Null
+
+	AdlibUnRegister("_CheckForUpdateMaster")
+	InetClose($aInet)
+	$sFile = FileRead(@TempDir & "\MSPC.txt")
+	FileDelete(@TempDir & "\MSPC.txt")
+
+	If $asInfo[3] <> True Then Return False
+	$aRet = StringSplit($sFile, "|")
+	If @error Then Return False
+	If $aRet[0] <> 2 Then Return False
+	If $aRet[1] <= 19 Then Return False   ;Version
+
+	$sUpdateLink = $aRet[2]
+	Return True
+EndFunc
+
+Func _UpdateHint($sText)
+	_ArrayAdd2($asHint, $sText)
+	$asHint[0] = UBound($asHint) -2
+	AdlibRegister("_HintRemove", 20)
+EndFunc
+
+Func _ArrayAdd2(ByRef $avArray, $vValue)
+	Local $iUBound = UBound($avArray)
+	ReDim $avArray[$iUBound + 1]
+	$avArray[$iUBound] = $vValue
+EndFunc   ;==>_ArrayAdd
+
+#EndRegion
+
+#Region   ;Internal functions
 
 ;Unknown author, function found in post here http://www.autoitscript.com/forum/topic/51103-resources-udf/?p=921164
 Func _ResourceGetAsRaw($sModule, $vResType, $vResName, $iResLang = 0)
@@ -1481,51 +1633,60 @@ Func _TCPConnect($sIPAddr, $iPort, $iTimeOut = -1)
 	Return SetError($iDllErr, 0, $hSock)
 EndFunc   ;==>_TCPConnect
 
-;Thx to Mat for code to use a bitmap instead of a file for tray icon http://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
-Func _TraySet($sText)
-	_GDIPlus_GraphicsClear($hGraphic, 0xFFFFFFFF)
+Func _IniClean();_IniClean($oObj)
+	$asServers = IniReadSectionNames(@ScriptDir & "\Servers.ini")
+	If Not @error Then
+		For $iX = 1 To $asServers[0]
+			$asPorts = IniReadSection(@ScriptDir & "\Servers.ini", $asServers[$iX])
+			If @error Then
+				IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX])
+				ContinueLoop
+			EndIf
 
-	$hFamily = _GDIPlus_FontFamilyCreate('Arial')
-	$hFont = _GDIPlus_FontCreate($hFamily, 16, 1, 2)
-	$tLayout = _GDIPlus_RectFCreate(0, 0, 0, 0)
-	$hFormat = _GDIPlus_StringFormatCreate()
-	$hBrush = _GDIPlus_BrushCreateSolid(0xFF000000)
-	$aData = _GDIPlus_GraphicsMeasureString($hGraphic, $sText, $hFont, $tLayout, $hFormat)
-	$tLayout = $aData[0]
-	DllStructSetData($tLayout, 1, (_GDIPlus_ImageGetWidth($hImage) - DllStructGetData($tLayout, 3)) / 2)
-	DllStructSetData($tLayout, 2, (_GDIPlus_ImageGetHeight($hImage) - DllStructGetData($tLayout, 4)) / 2)
-	_GDIPlus_GraphicsDrawStringEx($hGraphic, $sText, $hFont, $aData[0], $hFormat, $hBrush)
-	_GDIPlus_StringFormatDispose($hFormat)
-	_GDIPlus_FontFamilyDispose($hFamily)
-	_GDIPlus_FontDispose($hFont)
-	_GDIPlus_BrushDispose($hBrush)
-
-	$hIcon = _GDIPlus_BitmapCreateHICONFromBitmap($hImage)
-	$vRet = _Tray_SetHIcon($hIcon)
-	_WinAPI_DestroyIcon($hIcon)
+			IniDelete(@ScriptDir & "\Servers.ini", $asServers[$iX], "")
+		Next
+	EndIf
 EndFunc
 
-Func _GDIPlus_BitmapCreateHICONFromBitmap($hBitmap)
-    Local $hIcon = DllCall($ghGDIPDll, "int", "GdipCreateHICONFromBitmap", "hwnd", $hBitmap, "int*", 0)
-    If @error Or Not $hIcon[0] Then Return SetError(@error, @extended, $hIcon[2])
+Func _MCStringClean(ByRef $sText, $dKeepColors = False)
+	Local $iReplacements = 0
 
-    Return $hIcon[2]
-EndFunc   ;==>_GDIPlus_BitmapCreateHICONFromBitmap
+	$sText = StringReplace($sText, "Â", "")
+	$iReplacements += @extended
 
-Func _Tray_SetHIcon($hIcon)
-    Local $tNOTIFY = DllStructCreate($tagNOTIFYICONDATA)
-    DllStructSetData($tNOTIFY, "Size", DllStructGetSize($tNOTIFY))
-    DllStructSetData($tNOTIFY, "Wnd", $TRAY_ICON_GUI)
-    DllStructSetData($tNOTIFY, "ID", $AUT_NOTIFY_ICON_ID)
-    DllStructSetData($tNOTIFY, "Icon", $hIcon)
-    DllStructSetData($tNOTIFY, "Flags", BitOR($NIF_ICON, $NIF_MESSAGE))
-    DllStructSetData($tNOTIFY, "CallbackMessage", $AUT_WM_NOTIFYICON)
+	If Not $dKeepColors Then
+		$sText = StringRegExpReplace($sText, "(§.)", "")
+		$iReplacements += @extended
+	EndIf
 
-    Local $aRet = DllCall("shell32.dll", "int", "Shell_NotifyIconW", "dword", $NIM_MODIFY, "struct*", $tNOTIFY)
-    If (@error) Then Return SetError(1, 0, 0)
+	$sText = StringReplace($sText, @CR, "")
+	$sText = StringReplace($sText, @LF, "")
 
-    Return $aRet[0] <> 0
-EndFunc   ;==>_Tray_SetHIcon
+	Return $iReplacements
+EndFunc
+
+Func _AvatarsDelete()
+	Local $sTempFolder = @ScriptDir & "\TemporaryFiles\"
+	Local $hSearch = FileFindFirstFile($sTempFolder & "*.png")
+	If $hSearch = -1 Then Return
+
+	Local $sFileName, $sStartDate, $sEndDate = _NowCalc()
+
+	While 1
+		$sFileName = FileFindNextFile($hSearch)
+		If @error Then ExitLoop
+		If @extended Then ContinueLoop
+
+		$asStartDate = FileGetTime($sTempFolder & $sFileName)
+		If @error Then ContinueLoop
+		$iDateCalc = _DateDiff("D", $asStartDate[0] & "/" & $asStartDate[1] & "/" & $asStartDate[2], $sEndDate)
+		If @error Then ContinueLoop
+
+		If $iDateCalc >= 7 Then FileDelete($sTempFolder & $sFileName)
+	WEnd
+
+	FileClose($hSearch)
+EndFunc
 
 Func _Log($sMessage, $iLineNumber = @ScriptLineNumber)
 	Local $sText = StringFormat("%04i", $iLineNumber) & " | " & @HOUR & ":" & @MIN & " " & @SEC & ":" & @MSEC & " | " & $sMessage & @CRLF
@@ -1557,170 +1718,4 @@ Func _Quitting()
 	_Log("bye")
 EndFunc
 
-Func _AdlibNaughtyCatShow()
-	AdlibUnRegister(_AdlibNaughtyCatShow)
-
-	GUISetState(@SW_SHOW, $hNaughtyCatGui)
-	AdlibRegister(_AdlibNaughtyCatHide, 5000)
-EndFunc
-
-Func _AdlibNaughtyCatHide()
-	AdlibUnRegister(_AdlibNaughtyCatHide)
-	GUISetState(@SW_HIDE, $hNaughtyCatGui)
-EndFunc
-
-;Thx to Yashied for Code/Idea on how to handle listview checkboxes http://www.autoitscript.com/forum/topic/110391-listview-get-change-in-checking-items/#entry775483
-;Thx to GaryFrost for Code/Idea on how to handle listview hover event http://www.autoitscript.com/forum/topic/41345-hover-detection-with-listview-is-it-posiible/?p=307598
-Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
-	#forceref $hWnd, $iMsg, $iwParam
-	Local $iIDFrom, $iCode, $tNMHDR, $tInfo, $iIndex
-	Static Local $iState
-
-	$tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
-	$iIDFrom = DllStructGetData($tNMHDR, "IDFrom")
-	$iCode = DllStructGetData($tNMHDR, "Code")
-
-	Switch $iIDFrom
-		Case $idServers
-			Switch $iCode
-				Case $LVN_ITEMCHANGING
-					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-					$iIndex = DllStructGetData($tInfo, "Index")
-					$iState = _GUICtrlListView_GetItemChecked($idServers, $iIndex)
-
-					If $iListviewFlag Then
-						$iListviewIndex = $iIndex
-						$iListviewFlag = False
-					EndIf
-				Case $LVN_ITEMCHANGED
-					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-					$iIndex = DllStructGetData($tInfo, "Index")
-					If $iState <> _GUICtrlListView_GetItemChecked($idServers, $iIndex) Then
-						$oServers.SetEnabled(_GUICtrlListView_GetItemText($idServers, $iIndex), _GUICtrlListView_GetItemText($idServers, $iIndex, 1), (Not $iState))
-					EndIf
-
-					If $iListviewIndex <> -1 Then
-						If $iListviewIndex <> $iIndex Then
-							_ServerInfoShow($iIndex)
-							$iListviewIndex = -1
-						EndIf
-					EndIf
-				Case $LVN_KEYDOWN
-					$iListviewFlag = True
-				Case $NM_CLICK
-					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
-					$aiHit = _GUICtrlListView_HitTest(GUICtrlGetHandle($idServers))
-					If IsArray($aiHit) And $aiHit[3] = False Then Return $GUI_RUNDEFMSG
-
-					$iIndex = DllStructGetData($tInfo, "Index")
-					_ServerInfoShow($iIndex)
-			EndSwitch
-		Case $idServerPlayers
-			Switch $iCode
-				Case $LVN_HOTTRACK
-					AdlibUnRegister(_AdlibNaughtyCatShow)
-					$tInfo = DllStructCreate($tagNMLISTVIEW, $ilParam)
-					$iIndex = DllStructGetData($tInfo, "Item")
-					If $iIndex = -1 Then Return $GUI_RUNDEFMSG
-					If _NaughtyList(_GUICtrlListView_GetItemText($idServerPlayers, DllStructGetData($tInfo, "Item"))) Then AdlibRegister(_AdlibNaughtyCatShow, 2000)
-			EndSwitch
-	EndSwitch
-	Return $GUI_RUNDEFMSG
-EndFunc   ;==>_WM_NOTIFY
-
-Func _WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
-	#forceref $hWnd, $Msg
-	Local $nNotifyCode = BitShift($wParam, 16)
-	Local $hCtrl = $lParam
-
-	Switch $hCtrl
-		Case $hTimeout
-			Switch $nNotifyCode
-				Case $CBN_EDITCHANGE, $CBN_SELCHANGE
-					IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", GUICtrlRead($cIdTimeout))
-			EndSwitch
-		Case $hCountTray
-			Switch $nNotifyCode
-				Case $BN_CLICKED
-					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
-						Opt("TrayIconHide", 0)
-						_TraySet($iServerTray)
-					Else
-						Opt("TrayIconHide", 1)
-					EndIf
-			EndSwitch
-		Case $hColorizeListview
-			Switch $nNotifyCode
-				Case $BN_CLICKED
-					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
-						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
-							If _GUICtrlListView_GetItemChecked($idServers, $iX) Then
-								If _GUICtrlListView_GetItemText($idServers, $iX, 2) <> "" Then
-									$asSplit = StringSplit(_GUICtrlListView_GetItemText($idServers, $iX, 3), "/")
-									If $asSplit[1] > 0 Then
-										GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0x00FF00)
-									Else
-										GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFFFF33)
-									EndIf
-								Else
-									GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFF0000)
-								EndIf
-							EndIf
-						Next
-					Else
-						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
-							GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0xFFFFFF)
-						Next
-					EndIf
-			EndSwitch
-	EndSwitch
-
-	Return $GUI_RUNDEFMSG
-EndFunc   ;==>_WM_COMMAND
-
-Func _WM_GETMINMAXINFO($hwnd, $Msg, $wParam, $lParam)
-    $tagMaxinfo = DllStructCreate("int;int;int;int;int;int;int;int;int;int", $lParam)
-    DllStructSetData($tagMaxinfo, 7, $aiGuiMin[2]) ; min X
-    DllStructSetData($tagMaxinfo, 8, $aiGuiMin[3]) ; min Y
-    Return 0
-EndFunc   ;==>WM_GETMINMAXINFO
-
-Func _CheckForUpdateMaster()
-	$iCheck = _CheckForUpdate()
-	If $iCheck Then
-		_UpdateHint("Update found, click to open website")
-	ElseIf $iCheck = False Then
-		_UpdateHint("No update found")
-	EndIf
-EndFunc
-
-Func _UpdateHint($sText)
-	_ArrayAdd2($asHint, $sText)
-	$asHint[0] = UBound($asHint) -2
-	AdlibRegister("_HintRemove", 20)
-EndFunc
-
-Func _ArrayAdd2(ByRef $avArray, $vValue)
-	Local $iUBound = UBound($avArray)
-	ReDim $avArray[$iUBound + 1]
-	$avArray[$iUBound] = $vValue
-EndFunc   ;==>_ArrayAdd
-
-Func _CheckForUpdate()
-	Local $asInfo = InetGetInfo($aInet)
-	If $asInfo[2] <> True Then Return Null
-
-	AdlibUnRegister("_CheckForUpdateMaster")
-	InetClose($aInet)
-	$sFile = FileRead(@TempDir & "\MSPC.txt")
-	FileDelete(@TempDir & "\MSPC.txt")
-
-	If $asInfo[3] <> True Then Return False
-	$aRet = StringSplit($sFile, "|")
-	If @error Then Return False
-	If $aRet[0] <> 2 Then Return False
-	If $aRet[1] <= 19 Then Return False   ;Version
-
-	$sUpdateLink = $aRet[2]
-	Return True
-EndFunc
+#EndRegion
