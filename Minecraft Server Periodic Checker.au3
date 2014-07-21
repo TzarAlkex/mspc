@@ -88,193 +88,32 @@ Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 
 Global $iDefaultPort = 25565, $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2]
 
-Local $iGuiX = 832, $iGuiY = 480
-
-$hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
-
-Local $aiGuiMin = WinGetPos($hGui)
-
-
-GUICtrlCreateGroup("Add server", 5, 5, 375, 70)
-$idIP = GUICtrlCreateInput("", 20, 30, 290, 25)
-GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server address")
-GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
-$idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
-
-
-GUICtrlCreateGroup("Scan", 390, 5, 215, 70)
-$idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
-
-$idServers = GUICtrlCreateListView("Server Address|Port|Version|Players|MOTD", 5, 80, 600, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
-$idServerContext = GUICtrlCreateContextMenu($idServers)
-$idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
-$idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
-GUICtrlCreateMenuItem("", $idServerContext)
-GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
-GUICtrlSetState(-1, $GUI_DISABLE)
-Local $idServerMenuAuto = GUICtrlCreateMenuItem("Automatic", $idServerContext)
-Local $idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
-Local $idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
-Local $idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
-
-_IniClean()
-
-Local $oServers = _Servers()
-$oServers.ConvertINI()
-$oServers.Load()
-
-For $iX = 0 To UBound($oServers.List) -1
-	GUICtrlCreateListViewItem($oServers.List[$iX][$eServer] & "|" & $oServers.List[$iX][$ePort], $idServers)
-	GUICtrlSetBkColor(-1, 0xFFFFFF)
-	GUICtrlSetColor(-1, 0)
-	If $oServers.List[$iX][$eEnabled] Then _GUICtrlListView_SetItemChecked($idServers, _GUICtrlListView_GetItemCount($idServers) -1)
-Next
-
-If _GUICtrlListView_GetItemCount($idServers) > 0 Then
-	_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
-	_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
-EndIf
-
-
-Local $sSecondsBetweenScans
-Local $sMinutesBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans", "IsglassIsTasty")
-If $sMinutesBetweenScans <> "IsglassIsTasty" Then
-	$sSecondsBetweenScans = $sMinutesBetweenScans * 60
-	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", $sSecondsBetweenScans)
-	IniDelete(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans")
-EndIf
-
+;Main GUI
+Global $hGui, $iGuiY, $aiGuiMin
+;Settings GUI
+Global $hSettingsGui
+;Naughty cat GUI
+Global $hNaughtyCatGui
+;Controls
+Global $idIP, $idAdd, $idScanNow
+Global $idServers, $idServerDelete, $idServerShowPopup, $idServerMenuAuto, $idServerMenuOld, $idServerMenuTrue, $idServerMenuNew
+Global $cIdHints, $cIdSettings, $idPopupDummy
+Global $idServerImage, $idServerProtocol, $idServerPlayers, $idDeleteAvatars
+Global $idSeconds, $cIdTimeout, $hTimeout
+Global $idFlashWin
+Global $idColorizeListview, $hColorizeListview, $idCountTray, $hCountTray, $idCheckForUpdate
+Global $cIdNaughtyCat
+;Objects
+Global $oServers
+;Hint-ticker-thing
 Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
-Global $cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
-
-Global $cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 500, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
-Local $hSettingsImageList = _GUIImageList_Create(32, 32, 5, 3, 1)
-If @Compiled Then
-	Global $iListNew = _ImageList_AddImageFromResource($hSettingsImageList, "SETTINGS")
-Else
-	Global $iListNew = _ImageList_AddImage($hSettingsImageList, @ScriptDir & "\cog.png")
-EndIf
-_GUICtrlButton_SetImageList($cIdSettings, $hSettingsImageList, 0)
-
-$idPopupDummy = GUICtrlCreateDummy()
+;Imagelist
+Global $idServerPlayersImageListDuplicate, $iListNew, $iListError, $iListDefault
+;Inet
+Global $aInet
 
 
-GUICtrlCreateGroup("1.7+ only", 615, 5, 207, $iGuiY - 15)
-
-$idServerImage = GUICtrlCreatePic("", 625, 25, 64, 64)
-If @Compiled Then
-	Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "SERVER_DEFAULT")), True)
-	_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
-	_WinAPI_DeleteObject($hBmp)
-Else
-	GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
-EndIf
-
-$idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
-GUICtrlSetState(-1, $GUI_HIDE)
-
-$idServerPlayers = GUICtrlCreateListView("Name", 625, 95, $iGuiX - 645, $iGuiY - 115, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
-_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE, $LVS_EX_ONECLICKACTIVATE)
-Global $idServerPlayersImageList = _GUIImageList_Create(32, 32)
-If @Compiled Then
-	Global $iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
-	Global $iListError = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_ERROR")
-	Global $iListDefault = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_DEFAULT")
-Else
-	Global $iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
-	Global $iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
-	Global $iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
-EndIf
-Global $idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
-_GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
-_GUICtrlListView_SetView($idServerPlayers, 1)
-
-$idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
-GUICtrlSetState(-1, $GUI_HIDE)
-
-
-Local $asSettingsSize[] = [200, 235]
-Global $hSettingsGui = GUICreate(StringTrimRight(@ScriptName, 4), $asSettingsSize[0], $asSettingsSize[1], 440, 205, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
-
-
-GUICtrlCreateGroup("Scan", 5, 5, $asSettingsSize[0] -10, 75)
-
-GUICtrlCreateLabel("Timer", 15, 20, 50, 25, $SS_CENTERIMAGE)
-$idSeconds = GUICtrlCreateCombo("", 70, 20, 50, 25)
-If $sSecondsBetweenScans = "" Then
-	$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
-EndIf
-Local $sCombo = "60|180|300|"
-If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
-	If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
-		$sCombo &= $sSecondsBetweenScans & "|"
-	EndIf
-	GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
-Else
-	GUICtrlSetData(-1, $sCombo, 60)
-EndIf
-GUICtrlCreateLabel("(Seconds)", 130, 20, 60, 25, $SS_CENTERIMAGE)
-
-GUICtrlCreateLabel("Timeout", 15, 50, 50, 25, $SS_CENTERIMAGE)
-$cIdTimeout = GUICtrlCreateCombo("", 70, 50, 50, 25)
-Global $hTimeout = GUICtrlGetHandle(-1)
-Local $iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
-If $iTimeoutSeconds Then
-	GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
-Else
-	GUICtrlSetData(-1, 10, 10)
-EndIf
-GUICtrlCreateLabel("(Seconds)", 130, 50, 60, 25, $SS_CENTERIMAGE)
-
-
-GUICtrlCreateGroup("When server goes online", 5, 85, $asSettingsSize[0] -10, 60)
-
-Global $idFlashWin = GUICtrlCreateCheckbox("Flash window", 15, 100, $asSettingsSize[0] -30, 20)
-Local $sFlashWindow = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", "PizzaIsTasty")
-If $sFlashWindow = "1" Or $sFlashWindow = "PizzaIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
-
-GUICtrlCreateCheckbox("Notify in tray bar", 15, 120, $asSettingsSize[0] -30, 20)
-GUICtrlSetState(-1, $GUI_HIDE)
-
-
-GUICtrlCreateGroup("Misc", 5, 150, $asSettingsSize[0] -10, 80)
-
-Global $idColorizeListview = GUICtrlCreateCheckbox("Colorize listview", 15, 165, $asSettingsSize[0] -30, 20)
-Global $hColorizeListview = GUICtrlGetHandle(-1)
-Local $sColorizeListview = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", "MatIsTasty")
-If $sColorizeListview = "1" Or $sColorizeListview = "MatIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
-
-Global $idCountTray = GUICtrlCreateCheckbox("Count in tray icon", 15, 185, $asSettingsSize[0] -30, 20)
-Global $hCountTray = GUICtrlGetHandle(-1)
-Local $sCountTray = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", "JulmustIsTasty")
-If $sCountTray = "1" Or $sCountTray = "JulmustIsTasty" Then
-	GUICtrlSetState(-1, $GUI_CHECKED)
-	Opt("TrayIconHide", 0)
-	_TraySet($iServerTray)
-EndIf
-
-Global $idCheckForUpdate = GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
-Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(0xF6) & "ttbullarIsTasty")
-If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(0xF6) & "ttbullarIsTasty" Then
-	GUICtrlSetState(-1, $GUI_CHECKED)
-	Global $aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
-	AdlibRegister("_CheckForUpdateMaster", 100)
-	$asHint[0] = -1
-EndIf
-
-
-Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
-
-Global $hNaughtyCatGui = GUICreate("Naughty - " & StringTrimRight(@ScriptName, 4), $iNaughtyCatX, $iNaughtyCatY, $iGuiX / 2 - $iNaughtyCatX / 2, $iGuiY / 2 - $iNaughtyCatY / 2, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
-
-Global $cIdNaughtyCat = GUICtrlCreatePic("", 0, 0, $iNaughtyCatX, $iNaughtyCatY)
-If @Compiled Then
-	Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "NAUGHTY_CAT")), True)
-	_WinAPI_DeleteObject(GUICtrlSendMsg(-1, 0x0172, 0, $hBmp))
-	_WinAPI_DeleteObject($hBmp)
-Else
-	GUICtrlSetImage(-1, @ScriptDir & "\svartnos_tunga.jpg")
-EndIf
+_GUICreate()
 
 
 GUISetState(@SW_SHOW, $hGui)
@@ -290,88 +129,11 @@ _AutoItObject_RegisterObject($oServers, $sMyCLSID2 & "." & @AutoItPID)
 If IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "MyVeryRandomString") = "MyVeryRandomString" Then
 	IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "LoggingLevel", "Unknown")
 EndIf
-
 _AvatarsDelete()
+
 AdlibRegister("_ServerCheck")
 
-While 1
-	Switch GUIGetMsg()
-		Case $GUI_EVENT_CLOSE
-			For $iX = 1 To UBound($avPopups) -1
-				_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iX][4]), $GWL_WNDPROC, $avPopups[$iX][3])
-				DllCallbackFree($avPopups[$iX][2])
-			Next
-			Exit
-		Case $idAdd
-			Local $asAddress = StringSplit(GUICtrlRead($idIP), ":", $STR_NOCOUNT)
-			If $asAddress[0] = "" Then
-				ContinueLoop
-			ElseIf UBound($asAddress) = 1 Then
-				ReDim $asAddress[2]
-				$asAddress[1] = ""
-			EndIf
-
-			Local $iIndex = -1
-			While 1
-				$iIndex = _GUICtrlListView_FindText($idServers, $asAddress[0], $iIndex, False, False)
-				If $iIndex <> -1 Then
-					If _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $asAddress[1] Then
-						MsgBox(48, StringTrimRight(@ScriptName, 4), "You already have a server with this address and port added!", 0, $hGui)
-						ContinueLoop 2
-					Else
-						ContinueLoop
-					EndIf
-				Else
-					ExitLoop
-				EndIf
-			WEnd
-
-			GUICtrlCreateListViewItem($asAddress[0] & "|" & $asAddress[1], $idServers)
-			GUICtrlSetBkColor(-1, 0xFFFFFF)
-			GUICtrlSetColor(-1, 0)
-			_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
-			_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
-			$oServers.Add($asAddress[0], $asAddress[1], False, "Auto")
-			GUICtrlSetState(-1, $GUI_CHECKED)
-		Case $idScanNow
-			_ServerCheck()
-		Case $idServerDelete
-			_ServerDelete()
-		Case $idServerShowPopup
-			_ServerPopupShow()
-		Case $idServerMenuAuto
-			_ServerVersionSet($eProtocolAuto)
-		Case $idServerMenuOld
-			_ServerVersionSet($eProtocol1)
-		Case $idServerMenuTrue
-			_ServerVersionSet($eProtocol2)
-		Case $idServerMenuNew
-			_ServerVersionSet($eProtocol3)
-		Case $cIdHints
-			If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
-		Case $cIdSettings
-			If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED Then
-				GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25BC))
-				GUISetState(@SW_SHOWNOACTIVATE, $hSettingsGui)
-			Else
-				GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25B2))
-				GUISetState(@SW_HIDE, $hSettingsGui)
-			EndIf
-		Case $idPopupDummy
-			$iSkipLabelProc = True
-			$iCurrent = GUICtrlRead($idPopupDummy)
-			_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iCurrent][4]), $GWL_WNDPROC, $avPopups[$iCurrent][3])
-			DllCallbackFree($avPopups[$iCurrent][2])
-			GUIDelete($avPopups[$iCurrent][0])
-			_ArrayDelete($avPopups, $iCurrent)
-			$iSkipLabelProc = False
-		Case $idDeleteAvatars
-			_AvatarsDeleteALL()
-			_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
-		Case $cIdNaughtyCat
-			GUISetState(@SW_HIDE, $hNaughtyCatGui)
-	EndSwitch
-WEnd
+_GUIMainLoop()
 
 #Region   ;Server bars
 
@@ -1020,6 +782,281 @@ Func _IniServerStuffToServerlistStuff($sText)
 	EndSwitch
 
 	Return $avRet
+EndFunc
+
+#EndRegion
+
+#Region   ;GUI
+
+Func _GUICreate()
+	Local $iGuiX = 832
+	$iGuiY = 480
+
+	$hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
+
+	$aiGuiMin = WinGetPos($hGui)
+
+
+	GUICtrlCreateGroup("Add server", 5, 5, 375, 70)
+	$idIP = GUICtrlCreateInput("", 20, 30, 290, 25)
+	GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server address")
+	GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
+	$idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
+
+	GUICtrlCreateGroup("Scan", 390, 5, 215, 70)
+	$idScanNow = GUICtrlCreateButton("Scan now", 400, 30, 150, 25)
+
+
+	$idServers = GUICtrlCreateListView("Server Address|Port|Version|Players|MOTD", 5, 80, 600, $iGuiY - 125, $LVS_SHOWSELALWAYS, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
+	Local $idServerContext = GUICtrlCreateContextMenu($idServers)
+	$idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
+	$idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
+	GUICtrlCreateMenuItem("", $idServerContext)
+	GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
+	GUICtrlSetState(-1, $GUI_DISABLE)
+	$idServerMenuAuto = GUICtrlCreateMenuItem("Automatic", $idServerContext)
+	$idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
+	$idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
+	$idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
+
+	_IniClean()
+
+	$oServers = _Servers()
+	$oServers.ConvertINI()
+	$oServers.Load()
+
+	For $iX = 0 To UBound($oServers.List) -1
+		GUICtrlCreateListViewItem($oServers.List[$iX][$eServer] & "|" & $oServers.List[$iX][$ePort], $idServers)
+		GUICtrlSetBkColor(-1, 0xFFFFFF)
+		GUICtrlSetColor(-1, 0)
+		If $oServers.List[$iX][$eEnabled] Then _GUICtrlListView_SetItemChecked($idServers, _GUICtrlListView_GetItemCount($idServers) -1)
+	Next
+
+	If _GUICtrlListView_GetItemCount($idServers) > 0 Then
+		_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
+		_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
+	EndIf
+
+
+	Local $sSecondsBetweenScans
+	Local $sMinutesBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans", "IsglassIsTasty")
+	If $sMinutesBetweenScans <> "IsglassIsTasty" Then
+		$sSecondsBetweenScans = $sMinutesBetweenScans * 60
+		IniWrite(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", $sSecondsBetweenScans)
+		IniDelete(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans")
+	EndIf
+
+	$cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
+
+	$cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 500, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
+	Local $hSettingsImageList = _GUIImageList_Create(32, 32, 5, 3, 1)
+	If @Compiled Then
+		_ImageList_AddImageFromResource($hSettingsImageList, "SETTINGS")
+	Else
+		_ImageList_AddImage($hSettingsImageList, @ScriptDir & "\cog.png")
+	EndIf
+	_GUICtrlButton_SetImageList($cIdSettings, $hSettingsImageList, 0)
+
+	$idPopupDummy = GUICtrlCreateDummy()
+
+
+	GUICtrlCreateGroup("1.7+ only", 615, 5, 207, $iGuiY - 15)
+
+	$idServerImage = GUICtrlCreatePic("", 625, 25, 64, 64)
+	If @Compiled Then
+		Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "SERVER_DEFAULT")), True)
+		_WinAPI_DeleteObject(GUICtrlSendMsg($idServerImage, 0x0172, 0, $hBmp))
+		_WinAPI_DeleteObject($hBmp)
+	Else
+		GUICtrlSetImage($idServerImage, @ScriptDir & "\Svartnos.jpg")
+	EndIf
+
+	$idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
+	GUICtrlSetState(-1, $GUI_HIDE)
+
+	$idServerPlayers = GUICtrlCreateListView("Name", 625, 95, $iGuiX - 645, $iGuiY - 115, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+	_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE, $LVS_EX_ONECLICKACTIVATE)
+	Local $idServerPlayersImageList = _GUIImageList_Create(32, 32)
+	If @Compiled Then
+		$iListNew = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_WAIT")
+		$iListError = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_ERROR")
+		$iListDefault = _ImageList_AddImageFromResource($idServerPlayersImageList, "AVATAR_DEFAULT")
+	Else
+		$iListNew = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\PleaseWait.png")
+		$iListError = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Error.png")
+		$iListDefault = _ImageList_AddImage($idServerPlayersImageList, @ScriptDir & "\Default3.png")
+	EndIf
+	$idServerPlayersImageListDuplicate = _GUIImageList_Duplicate($idServerPlayersImageList)
+	_GUICtrlListView_SetImageList($idServerPlayers, $idServerPlayersImageList, 0)
+	_GUICtrlListView_SetView($idServerPlayers, 1)
+
+	$idDeleteAvatars = GUICtrlCreateButton("Delete cached avatars", 655, $iGuiY - 45, $iGuiX - 675, 25)
+	GUICtrlSetState(-1, $GUI_HIDE)
+
+
+	Local $asSettingsSize[] = [200, 235]
+	$hSettingsGui = GUICreate(StringTrimRight(@ScriptName, 4), $asSettingsSize[0], $asSettingsSize[1], 440, 205, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
+
+
+	GUICtrlCreateGroup("Scan", 5, 5, $asSettingsSize[0] -10, 75)
+
+	GUICtrlCreateLabel("Timer", 15, 20, 50, 25, $SS_CENTERIMAGE)
+	$idSeconds = GUICtrlCreateCombo("", 70, 20, 50, 25)
+	If $sSecondsBetweenScans = "" Then
+		$sSecondsBetweenScans = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "SecondsBetweenScans", "PyttipannaIsTasty")
+	EndIf
+	Local $sCombo = "60|180|300|"
+	If $sSecondsBetweenScans <> "PyttipannaIsTasty" Then
+		If StringInStr($sCombo, $sSecondsBetweenScans & "|") = 0 Then
+			$sCombo &= $sSecondsBetweenScans & "|"
+		EndIf
+		GUICtrlSetData(-1, $sCombo, $sSecondsBetweenScans)
+	Else
+		GUICtrlSetData(-1, $sCombo, 60)
+	EndIf
+	GUICtrlCreateLabel("(Seconds)", 130, 20, 60, 25, $SS_CENTERIMAGE)
+
+	GUICtrlCreateLabel("Timeout", 15, 50, 50, 25, $SS_CENTERIMAGE)
+	$cIdTimeout = GUICtrlCreateCombo("", 70, 50, 50, 25)
+	$hTimeout = GUICtrlGetHandle(-1)
+	Local $iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
+	If $iTimeoutSeconds Then
+		GUICtrlSetData(-1, $iTimeoutSeconds, $iTimeoutSeconds)
+	Else
+		GUICtrlSetData(-1, 10, 10)
+	EndIf
+	GUICtrlCreateLabel("(Seconds)", 130, 50, 60, 25, $SS_CENTERIMAGE)
+
+
+	GUICtrlCreateGroup("When server goes online", 5, 85, $asSettingsSize[0] -10, 60)
+
+	$idFlashWin = GUICtrlCreateCheckbox("Flash window", 15, 100, $asSettingsSize[0] -30, 20)
+	Local $sFlashWindow = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "FlashWindow", "PizzaIsTasty")
+	If $sFlashWindow = "1" Or $sFlashWindow = "PizzaIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
+
+	GUICtrlCreateCheckbox("Notify in tray bar", 15, 120, $asSettingsSize[0] -30, 20)
+	GUICtrlSetState(-1, $GUI_HIDE)
+
+
+	GUICtrlCreateGroup("Misc", 5, 150, $asSettingsSize[0] -10, 80)
+
+	$idColorizeListview = GUICtrlCreateCheckbox("Colorize listview", 15, 165, $asSettingsSize[0] -30, 20)
+	$hColorizeListview = GUICtrlGetHandle(-1)
+	Local $sColorizeListview = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "ColorizeListview", "MatIsTasty")
+	If $sColorizeListview = "1" Or $sColorizeListview = "MatIsTasty" Then GUICtrlSetState(-1, $GUI_CHECKED)
+
+	$idCountTray = GUICtrlCreateCheckbox("Count in tray icon", 15, 185, $asSettingsSize[0] -30, 20)
+	$hCountTray = GUICtrlGetHandle(-1)
+	Local $sCountTray = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CountTray", "JulmustIsTasty")
+	If $sCountTray = "1" Or $sCountTray = "JulmustIsTasty" Then
+		GUICtrlSetState(-1, $GUI_CHECKED)
+		Opt("TrayIconHide", 0)
+		_TraySet($iServerTray)
+	EndIf
+
+	$idCheckForUpdate = GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
+	Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(0xF6) & "ttbullarIsTasty")
+	If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(0xF6) & "ttbullarIsTasty" Then
+		GUICtrlSetState(-1, $GUI_CHECKED)
+		$aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
+		AdlibRegister("_CheckForUpdateMaster", 100)
+		$asHint[0] = -1
+	EndIf
+
+
+	Local $iNaughtyCatX = 290, $iNaughtyCatY = 340
+
+	$hNaughtyCatGui = GUICreate("Naughty - " & StringTrimRight(@ScriptName, 4), $iNaughtyCatX, $iNaughtyCatY, $iGuiX / 2 - $iNaughtyCatX / 2, $iGuiY / 2 - $iNaughtyCatY / 2, BitOR($WS_POPUP, $WS_BORDER), $WS_EX_MDICHILD, $hGui)
+
+	$cIdNaughtyCat = GUICtrlCreatePic("", 0, 0, $iNaughtyCatX, $iNaughtyCatY)
+	If @Compiled Then
+		Local $hBmp = _GDIPlus_BitmapCreateFromMemory(Binary(_ResourceGetAsRaw(@ScriptFullPath, 10, "NAUGHTY_CAT")), True)
+		_WinAPI_DeleteObject(GUICtrlSendMsg(-1, 0x0172, 0, $hBmp))
+		_WinAPI_DeleteObject($hBmp)
+	Else
+		GUICtrlSetImage(-1, @ScriptDir & "\svartnos_tunga.jpg")
+	EndIf
+EndFunc
+
+Func _GUIMainLoop()
+	While 1
+		Switch GUIGetMsg()
+			Case $GUI_EVENT_CLOSE
+				For $iX = 1 To UBound($avPopups) -1
+					_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iX][4]), $GWL_WNDPROC, $avPopups[$iX][3])
+					DllCallbackFree($avPopups[$iX][2])
+				Next
+				Exit
+			Case $idAdd
+				Local $asAddress = StringSplit(GUICtrlRead($idIP), ":", $STR_NOCOUNT)
+				If $asAddress[0] = "" Then
+					ContinueLoop
+				ElseIf UBound($asAddress) = 1 Then
+					ReDim $asAddress[2]
+					$asAddress[1] = ""
+				EndIf
+
+				Local $iIndex = -1
+				While 1
+					$iIndex = _GUICtrlListView_FindText($idServers, $asAddress[0], $iIndex, False, False)
+					If $iIndex <> -1 Then
+						If _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $asAddress[1] Then
+							MsgBox(48, StringTrimRight(@ScriptName, 4), "You already have a server with this address and port added!", 0, $hGui)
+							ContinueLoop 2
+						Else
+							ContinueLoop
+						EndIf
+					Else
+						ExitLoop
+					EndIf
+				WEnd
+
+				GUICtrlCreateListViewItem($asAddress[0] & "|" & $asAddress[1], $idServers)
+				GUICtrlSetBkColor(-1, 0xFFFFFF)
+				GUICtrlSetColor(-1, 0)
+				_GUICtrlListView_SetColumnWidth($idServers, 0, $LVSCW_AUTOSIZE)
+				_GUICtrlListView_SetColumnWidth($idServers, 1, $LVSCW_AUTOSIZE_USEHEADER)
+				$oServers.Add($asAddress[0], $asAddress[1], False, "Auto")
+				GUICtrlSetState(-1, $GUI_CHECKED)
+			Case $idScanNow
+				_ServerCheck()
+			Case $idServerDelete
+				_ServerDelete()
+			Case $idServerShowPopup
+				_ServerPopupShow()
+			Case $idServerMenuAuto
+				_ServerVersionSet($eProtocolAuto)
+			Case $idServerMenuOld
+				_ServerVersionSet($eProtocol1)
+			Case $idServerMenuTrue
+				_ServerVersionSet($eProtocol2)
+			Case $idServerMenuNew
+				_ServerVersionSet($eProtocol3)
+			Case $cIdHints
+				If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
+			Case $cIdSettings
+				If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED Then
+					GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25BC))
+					GUISetState(@SW_SHOWNOACTIVATE, $hSettingsGui)
+				Else
+					GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25B2))
+					GUISetState(@SW_HIDE, $hSettingsGui)
+				EndIf
+			Case $idPopupDummy
+				$iSkipLabelProc = True
+				$iCurrent = GUICtrlRead($idPopupDummy)
+				_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iCurrent][4]), $GWL_WNDPROC, $avPopups[$iCurrent][3])
+				DllCallbackFree($avPopups[$iCurrent][2])
+				GUIDelete($avPopups[$iCurrent][0])
+				_ArrayDelete($avPopups, $iCurrent)
+				$iSkipLabelProc = False
+			Case $idDeleteAvatars
+				_AvatarsDeleteALL()
+				_ServerInfoShow(_GUICtrlListView_GetSelectedIndices($idServers))
+			Case $cIdNaughtyCat
+				GUISetState(@SW_HIDE, $hNaughtyCatGui)
+		EndSwitch
+	WEnd
 EndFunc
 
 #EndRegion
