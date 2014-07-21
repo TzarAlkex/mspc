@@ -982,13 +982,20 @@ EndFunc
 
 Func _GUIMainLoop()
 	While 1
-		Switch GUIGetMsg()
+		Local $iMessage = GUIGetMsg(1)
+		Switch $iMessage[0]
 			Case $GUI_EVENT_CLOSE
 				For $iX = 1 To UBound($avPopups) -1
 					_WinAPI_SetWindowLong(GUICtrlGetHandle($avPopups[$iX][4]), $GWL_WNDPROC, $avPopups[$iX][3])
 					DllCallbackFree($avPopups[$iX][2])
 				Next
 				Exit
+			Case $GUI_EVENT_PRIMARYDOWN
+				If _GUICtrlButton_GetCheck($cIdSettings) = $GUI_CHECKED And $iMessage[1] = $hGui Then
+					GUICtrlSetData($cIdSettings, "Settings " & ChrW(0x25B2))
+					GUISetState(@SW_HIDE, $hSettingsGui)
+					_GUICtrlButton_SetCheck($cIdSettings, $BST_UNCHECKED)
+				EndIf
 			Case $idAdd
 				Local $asAddress = StringSplit(GUICtrlRead($idIP), ":", $STR_NOCOUNT)
 				If $asAddress[0] = "" Then
