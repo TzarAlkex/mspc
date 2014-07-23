@@ -17,7 +17,7 @@
 FileDelete(@UserProfileDir & "\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip")
 
 ;Creates and uploads new archive
-Local $iPID = Run('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a -x*.png "' & @UserProfileDir & '\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "ReadMe.txt" "TemporaryFiles" "Compile or running from source.txt"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+Local $iPID = Run('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a -x*.png "' & @UserProfileDir & '\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "ReadMe.txt" "TemporaryFiles"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 ProcessWaitClose($iPID)
 Local $sOutput = StdoutRead($iPID)
 ConsoleWrite($sOutput & @LF)
