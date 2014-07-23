@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
 #AutoIt3Wrapper_Res_Description=Alert user when his favorite Minecraft server goes online
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.19
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.20
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Res_File_Add=cog.png, rt_rcdata, SETTINGS
 #AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
@@ -1500,7 +1500,7 @@ Func _CheckForUpdate()
 	$aRet = StringSplit($sFile, "|")
 	If @error Then Return False
 	If $aRet[0] <> 2 Then Return False
-	If $aRet[1] <= 19 Then Return False   ;Version
+	If $aRet[1] <= 20 Then Return False   ;Version
 
 	$sUpdateLink = $aRet[2]
 	Return True
