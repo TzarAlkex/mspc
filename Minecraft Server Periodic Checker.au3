@@ -696,7 +696,7 @@ Func _ServersDelete($oSelf, $sServer, $sPort)
 EndFunc
 
 Func _ServersLoad($oSelf)
-	If UBound($oSelf.List) = 0 Then
+	If UBound($oSelf.List) = 0 And FileExists(@ScriptDir & "\Servers.dat") Then
 		$avTemp = LoadPickle(@ScriptDir & "\Servers.dat")
 		If $avTemp = 0 Then Return
 		$oSelf.List = $avTemp

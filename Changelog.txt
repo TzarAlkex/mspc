@@ -1,3 +1,6 @@
+0.0.0.20
+*Made it possible to close Settings GUI by clicking outside it
+*Fixed loading empty serverlists
 0.0.0.19
 *Servers.ini is now Servers.dat (more flexible, efficient and breakable; we will see how that works out)
 *Added support for SRV records
