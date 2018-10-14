@@ -12,10 +12,10 @@
 #AutoIt3Wrapper_Res_File_Add=Error.png, rt_rcdata, AVATAR_ERROR
 #AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
 #AutoIt3Wrapper_Res_File_Add=svartnos_tunga.jpg, rt_rcdata, NAUGHTY_CAT
-#AutoIt3Wrapper_Run_Obfuscator=y
-#Obfuscator_Parameters=/sf /sv /om /cs=0 /cn=0
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/sf /sv /mi=6 /rsln
+#Au3Stripper_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide, _ServersConvertINI, _ServersAdd, _ServersDelete, _ServersLoad, _ServersSave, _ServersSetEnabled, _ServersSetProtocol, _ServersSetProtocolCurrent, _ServersSetSRVData, _ServersEnabled
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#Obfuscator_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide, _ServersConvertINI, _ServersAdd, _ServersDelete, _ServersLoad, _ServersSave, _ServersSetEnabled, _ServersSetProtocol, _ServersSetProtocolCurrent, _ServersSetSRVData, _ServersEnabled
 
 #cs ----------------------------------------------------------------------------
 
@@ -34,7 +34,9 @@
 #include <GuiListView.au3>
 #include <ComboConstants.au3>
 #include <Array.au3>
+#Au3Stripper_Off
 #include "AutoitObject.au3"
+#Au3Stripper_On
 #include <GDIPlus.au3>
 #include <WinAPI.au3>
 #include <GuiButton.au3>
