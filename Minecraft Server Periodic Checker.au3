@@ -66,7 +66,13 @@ Global $sMyCLSID2 = "AutoIt.ServerCheckerList"
 
 Global $oError = ObjEvent("AutoIt.Error", "_ErrFunc")
 Func _ErrFunc()
+	If $CmdLine[0] > 1 And $CmdLine[1] = "/ServerScanner" Then
+		Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
+		$oObj.Log("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription)
+	Else
 	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
+	EndIf
+
 	Exit
 EndFunc
 
