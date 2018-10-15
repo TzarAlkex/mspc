@@ -70,7 +70,7 @@ Func _ErrFunc()
 		Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
 		$oObj.Log("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription)
 	Else
-	ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
+		ConsoleWrite("COM Error, ScriptLine(" & $oError.scriptline & ") : Number 0x" & Hex($oError.number, 8) & " - " & $oError.windescription & @CRLF)
 	EndIf
 
 	Exit
@@ -422,7 +422,7 @@ Func _ServerScanner()
 								$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol2)
 							EndIf
 						Else   ;pre 1.4 protocol
-							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "ง")
+							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "ยง")
 							If UBound($aRet) = 4 Then
 								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
 								Switch $avList[$iY][$eProtocol]
@@ -1700,19 +1700,21 @@ Func _IniClean();_IniClean($oObj)
 	EndIf
 EndFunc
 
-Func _MCStringClean(ByRef $sText, $dKeepColors = False)
+Func _MCStringClean(ByRef $sText, $dRemoveColors = True)
 	Local $iReplacements = 0
 
-	$sText = StringReplace($sText, "ย", "")
+	$sText = StringReplace($sText, "ร", "")
 	$iReplacements += @extended
 
-	If Not $dKeepColors Then
-		$sText = StringRegExpReplace($sText, "(ง.)", "")
+	If $dRemoveColors Then
+		$sText = StringRegExpReplace($sText, "(ยง.)", "")
 		$iReplacements += @extended
 	EndIf
 
 	$sText = StringReplace($sText, @CR, "")
+	$iReplacements += @extended
 	$sText = StringReplace($sText, @LF, "")
+	$iReplacements += @extended
 
 	Return $iReplacements
 EndFunc
