@@ -338,18 +338,32 @@ Func _ServerScanner()
 
 						Do
 							Sleep(100)
-							$dRet &= TCPRecv($iSocket, 1500, 1)
+							Local $dContinued = TCPRecv($iSocket, 65536, 1)
+							$dRet &= $dContinued
 							$error = @error
 							$oObj.Log("TCPRecv @error: " & $error)
-						Until $error <> 0
+						Until $error <> 0 Or $dContinued = ""
 
 						$oObj.Log("JSON START")
-						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
+						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
 						$oObj.Log("JSON END")
 
-						$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2)))
+						$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
 
-						$sDescription = Jsmn_ObjGet($oJSON, "description")
+						$vDescription = Jsmn_ObjGet($oJSON, "description")
+						Local $sDescription = ""
+						If IsObj($vDescription) Then
+							If Jsmn_ObjExists($vDescription, "extra") Then
+								$aoExtra = Jsmn_ObjGet($vDescription, "extra")
+								For $iX = 0 To UBound($aoExtra) -1
+									$sDescription &= Jsmn_ObjGet($aoExtra[$iX], "text")
+								Next
+							EndIf
+							$sDescription &= Jsmn_ObjGet($vDescription, "text")
+						Else
+							$sDescription &= $vDescription
+						EndIf
+						$sDescription = StringStripWS($sDescription, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
 
 						$oVersion = Jsmn_ObjGet($oJSON, "version")
 						$sVersionName = Jsmn_ObjGet($oVersion, "name")
@@ -358,24 +372,15 @@ Func _ServerScanner()
 						$oPlayers = Jsmn_ObjGet($oJSON, "players")
 						$iPlayersMax = Jsmn_ObjGet($oPlayers, "max")
 						$iPlayersOnline = Jsmn_ObjGet($oPlayers, "online")
+
 						If Jsmn_ObjExists($oPlayers, "sample") Then
-							$oSample = Jsmn_ObjGet($oPlayers, "sample")
-							$oSampleKeys = Jsmn_ObjTo2DArray($oSample)
-							If UBound($oSampleKeys) >= 1 Then
-								Local $aPlayer = $oSampleKeys[0], $asPlayers[UBound($oSampleKeys)][2]
-								If $aPlayer[1][0] = "name" Then
-									For $iZ = 0 To UBound($oSampleKeys) -1
-										$aPlayer = $oSampleKeys[$iZ]
-										$asPlayers[$iZ][0] = $aPlayer[1][1]
-										$asPlayers[$iZ][1] = $aPlayer[2][1]
-									Next
-								Else
-									For $iZ = 0 To UBound($oSampleKeys) -1
-										$aPlayer = $oSampleKeys[$iZ]
-										$asPlayers[$iZ][0] = $aPlayer[2][1]
-										$asPlayers[$iZ][1] = $aPlayer[1][1]
-									Next
-								EndIf
+							$aoSample = Jsmn_ObjGet($oPlayers, "sample")
+							If UBound($aoSample) >= 1 Then
+								Local $asPlayers[UBound($aoSample)][2]
+								For $iX = 0 To UBound($aoSample) -1
+									$asPlayers[$iX][0] = Jsmn_ObjGet($aoSample[$iX], "name")
+									$asPlayers[$iX][1] = Jsmn_ObjGet($aoSample[$iX], "id")
+								Next
 								$oObj.Player($avList[$iY][$eServer], $avList[$iY][$ePort], $asPlayers)
 							EndIf
 						EndIf
@@ -384,24 +389,15 @@ Func _ServerScanner()
 							Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
 							Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
 
-							Local $oModList = Jsmn_ObjGet($oModinfo, "modList")
-							Local $oModListKeys = Jsmn_ObjTo2DArray($oModList)
-
-							Local $aMod = $oModListKeys[0], $asMods[UBound($oModListKeys)][2]
-							If $aMod[1][0] = "modid" Then
-								For $iZ = 0 To UBound($oModListKeys) -1
-									$aMod = $oModListKeys[$iZ]
-									$asMods[$iZ][0] = $aMod[1][1]
-									$asMods[$iZ][1] = $aMod[2][1]
+							Local $aoModList = Jsmn_ObjGet($oModinfo, "modList")
+							If UBound($aoModList) >= 1 Then
+								Local $asMods[UBound($aoModList)][2]
+								For $iX = 0 To UBound($aoModList) -1
+									$asMods[$iX][0] = Jsmn_ObjGet($aoModList[$iX], "modid")
+									$asMods[$iX][1] = Jsmn_ObjGet($aoModList[$iX], "version")
 								Next
-							Else
-								For $iZ = 0 To UBound($oModListKeys) -1
-									$aMod = $oModListKeys[$iZ]
-									$asMods[$iZ][0] = $aMod[2][1]
-									$asMods[$iZ][1] = $aMod[1][1]
-								Next
+								$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
 							EndIf
-							$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
 						EndIf
 
 						If Jsmn_ObjExists($oJSON, "favicon") Then
