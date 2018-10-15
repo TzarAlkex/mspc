@@ -880,7 +880,7 @@ Func _GUICreate()
 	$idServerProtocol = GUICtrlCreateLabel("Protocol= to be implemented", 725, 25, 85, 64, $BS_MULTILINE)
 	GUICtrlSetState(-1, $GUI_HIDE)
 
-	$idServerPlayers = GUICtrlCreateListView("Name", 625, 95, $iGuiX - 645, $iGuiY - 115, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+	$idServerPlayers = GUICtrlCreateListView("Name", 625, 95, $iGuiX - 645, $iGuiY - 115, BitOR($LVS_SHOWSELALWAYS, $LVS_NOCOLUMNHEADER), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES, $LVS_EX_INFOTIP))
 	_GUICtrlListView_SetExtendedListViewStyle($idServerPlayers, $LVS_EX_ONECLICKACTIVATE, $LVS_EX_ONECLICKACTIVATE)
 	Local $idServerPlayersImageList = _GUIImageList_Create(32, 32)
 	If @Compiled Then
@@ -1103,20 +1103,22 @@ Func _ServerInfoShow($iIndex)
 		EndIf
 	EndIf
 
-	Local $iSetViewDetails = False, $iNeedDetails = 0, $sCleanName = ""
+	Local $iSetViewDetails = False, $iNeedDetails = 0, $sCleanName = "", $sID = ""
 	For $iX = 0 To UBound($asServerPlayers) -1
 		If $asServerPlayers[$iX][0] <> $sServer & ":" & $iPort Then ContinueLoop
 
 		$sCleanName = $asServerPlayers[$iX][1]
-		If _MCStringClean($sCleanName) > 0 Then $iNeedDetails += 1
+		$sID = $asServerPlayers[$iX][2]
+		If _MCStringClean($sCleanName) > 0 Or $sID = "00000000-0000-0000-0000-000000000000" Then $iNeedDetails += 1
+		$sCleanName = StringStripWS($sCleanName, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
 
 		_GUICtrlListView_AddItem($idServerPlayers, $sCleanName, $iListNew)
 	Next
 	If $iNeedDetails > _GUICtrlListView_GetItemCount($idServerPlayers) -1 Then
-		_GUICtrlListView_SetView($idServerPlayers, 0)
+		_GUICtrlListView_SetView($idServerPlayers, 1)
 		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
 	Else
-		_GUICtrlListView_SetView($idServerPlayers, 1)
+		_GUICtrlListView_SetView($idServerPlayers, 0)
 		AdlibRegister("_DownloadPlayerImages", 100)
 	EndIf
 EndFunc
@@ -1182,7 +1184,7 @@ Func _DownloadPlayerImages()
 	Next
 
 	If $iNeedDetails > $iCount Then
-		_GUICtrlListView_SetView($idServerPlayers, 0)
+		_GUICtrlListView_SetView($idServerPlayers, 1)
 		_GUICtrlListView_SetColumnWidth($idServerPlayers, 0, $LVSCW_AUTOSIZE)
 	EndIf
 EndFunc
