@@ -1137,6 +1137,11 @@ Func _DownloadPlayerImages()
 			ContinueLoop
 		EndIf
 
+		For $iY = 0 To UBound($asServerPlayers) -1
+			If $sFileName = $asServerPlayers[$iY][1] Then $sFileName = StringReplace($asServerPlayers[$iY][2], "-", "")
+			ExitLoop
+		Next
+
 		$sFileNameHEAD = @ScriptDir & "\TemporaryFiles\" & $sFileName & ".png"
 
 		If FileExists($sFileNameHEAD) Then
@@ -1144,32 +1149,13 @@ Func _DownloadPlayerImages()
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
-			$dInet = InetRead("http://s3.amazonaws.com/MinecraftSkins/" & $sFileName & ".png", $INET_FORCERELOAD)
+			$iInet = InetGet("https://minotar.net/avatar/" & $sFileName & "/32", $sFileNameHEAD, $INET_FORCERELOAD)
 			If @error = 13 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
-			ElseIf $dInet = "" Then
-				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
-			Else
-				Local $hImage = _GDIPlus_ImageCreateFromMemory($dInet)
-
-				$hWnd = _WinAPI_GetDesktopWindow()
-				$hDC = _WinAPI_GetDC($hWnd)
-				$hBMP = _WinAPI_CreateCompatibleBitmap($hDC, 32, 32)
-				_WinAPI_ReleaseDC($hWnd, $hDC)
-
-				$hImageCropped = _GDIPlus_BitmapCreateFromHBITMAP($hBMP)
-				$hGraphic = _GDIPlus_ImageGetGraphicsContext($hImageCropped)
-				_GDIPlus_GraphicsSetInterpolationMode($hGraphic, 5)
-				_GDIPlus_GraphicsDrawImageRectRect($hGraphic, $hImage, 7.5, 7.5, 8, 8, 0, 0, 32, 32)
-				$CLSID = _GDIPlus_EncodersGetCLSID("PNG")
-
-				_GDIPlus_ImageSaveToFileEx($hImageCropped, $sFileNameHEAD, $CLSID)
-				_GDIPlus_ImageDispose($hImageCropped)
-				_GDIPlus_ImageDispose($hImage)
-				_GDIPlus_GraphicsDispose ($hGraphic)
-				_WinAPI_DeleteObject($hBMP)
-
+			ElseIf $iInet <> 0 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, _ListView_AddImage($idServerPlayers, $sFileNameHEAD))
+			Else
+				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListError)
 			EndIf
 		EndIf
 		If TimerDiff($iTimeOut) > 100 Then
