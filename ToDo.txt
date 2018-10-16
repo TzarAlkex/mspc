@@ -2,3 +2,5 @@
 *Make GUI resizable (?)
 *Investigate for possible future usage http://www.autoitscript.com/forum/index.php?showtopic=90545
 *Find out why _GUICtrlListView_GetItemText() doesn't work as expected in rev. 24 and report to maintainers
+*Investigate for possible future usage https://www.autoitscript.com/forum/topic/194873-wsa-error-to-text/
+*Investigate for possible future usage https://www.autoitscript.com/forum/topic/181645-winsock-udf/ (_TCPRecv doesn't quite work, at least in binary mode which I need!)
