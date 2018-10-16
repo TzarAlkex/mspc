@@ -733,6 +733,7 @@ Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
 		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
 			$avList = $oSelf.List
 			$avList[$iX][$eProtocol] = $sProtocol
+			$avList[$iX][$eProtocolCurrent] = ""
 			$oSelf.List = $avList
 			ExitLoop
 		EndIf
