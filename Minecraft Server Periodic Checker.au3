@@ -601,7 +601,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 		If _GUICtrlListView_GetItemText($avPopups[$iX][1], 0, 0) <> $sServerAddress Or _GUICtrlListView_GetItemText($avPopups[$iX][1], 0, 1) <> $iServerPort Then ContinueLoop
 
 		_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, $sVersion, 2)
-		If $iCurrentPlayers = "" Then
+		If $iCurrentPlayers == "" Then
 			_GUICtrlListView_SetItemText($avPopups[$iX][1], 0, "", 3)
 			GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($avPopups[$iX][1], 0), 0xFF0000)
 		Else
