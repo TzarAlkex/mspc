@@ -818,12 +818,12 @@ Func _GUICreate()
 	$idServerDelete = GUICtrlCreateMenuItem("Delete selected server(s)", $idServerContext)
 	$idServerShowPopup = GUICtrlCreateMenuItem("Show server bar", $idServerContext)
 	GUICtrlCreateMenuItem("", $idServerContext)
-	GUICtrlCreateMenuItem("Manually set MC version to:", $idServerContext)
+	GUICtrlCreateMenuItem("Select protocol:", $idServerContext)
 	GUICtrlSetState(-1, $GUI_DISABLE)
-	$idServerMenuAuto = GUICtrlCreateMenuItem("Automatic", $idServerContext)
-	$idServerMenuOld = GUICtrlCreateMenuItem("Before 1.4", $idServerContext)
-	$idServerMenuTrue = GUICtrlCreateMenuItem("between 1.4 and 1.6", $idServerContext)
-	$idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext)
+	$idServerMenuAuto = GUICtrlCreateMenuItem("Find for me (might require multiple scans)", $idServerContext, -1, 1)
+	$idServerMenuOld = GUICtrlCreateMenuItem("Beta 1.8 to 1.3", $idServerContext, -1, 1)
+	$idServerMenuTrue = GUICtrlCreateMenuItem("1.4 to 1.6", $idServerContext, -1, 1)
+	$idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext, -1, 1)
 
 	_IniClean()
 
@@ -1349,6 +1349,37 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 
 					$iIndex = DllStructGetData($tInfo, "Index")
 					_ServerInfoShow($iIndex)
+				Case $NM_RCLICK
+					GUICtrlSetState($idServerMenuAuto, $GUI_UNCHECKED)
+					GUICtrlSetState($idServerMenuOld, $GUI_UNCHECKED)
+					GUICtrlSetState($idServerMenuTrue, $GUI_UNCHECKED)
+					GUICtrlSetState($idServerMenuNew, $GUI_UNCHECKED)
+
+					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
+					$iIndex = DllStructGetData($tInfo, "Index")
+					For $iX = 0 To UBound($oServers.List) -1
+						If _GUICtrlListView_GetItemText($idServers, $iIndex) = $oServers.List[$iX][$eServer] And _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $oServers.List[$iX][$ePort] Then
+							Switch $oServers.List[$iX][$eProtocol]
+								Case $eProtocolAuto
+									GUICtrlSetState($idServerMenuAuto, $GUI_CHECKED)
+									Switch $oServers.List[$iX][$eProtocolCurrent]
+										Case $eProtocol1
+											GUICtrlSetState($idServerMenuOld, $GUI_CHECKED)
+										Case $eProtocol2
+											GUICtrlSetState($idServerMenuTrue, $GUI_CHECKED)
+										Case Else
+											GUICtrlSetState($idServerMenuNew, $GUI_CHECKED)
+									EndSwitch
+								Case $eProtocol1
+									GUICtrlSetState($idServerMenuOld, $GUI_CHECKED)
+								Case $eProtocol2
+									GUICtrlSetState($idServerMenuTrue, $GUI_CHECKED)
+								Case $eProtocol3
+									GUICtrlSetState($idServerMenuNew, $GUI_CHECKED)
+							EndSwitch
+							Return $GUI_RUNDEFMSG
+						EndIf
+					Next
 			EndSwitch
 		Case $idServerPlayers
 			Switch $iCode
