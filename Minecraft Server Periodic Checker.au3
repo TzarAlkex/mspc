@@ -424,7 +424,7 @@ Func _ServerScanner()
 						Else   ;pre 1.4 protocol
 							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 							If UBound($aRet) = 4 Then
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "1.3 or older", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "n/a", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
 								Switch $avList[$iY][$eProtocol]
 									Case $eProtocol2, $eProtocolAuto
 										$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
