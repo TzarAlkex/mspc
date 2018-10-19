@@ -1163,7 +1163,7 @@ Func _DownloadPlayerImages()
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
-			$iInet = InetGet("https://minotar.net/avatar/" & $sFileName & "/32", $sFileNameHEAD, $INET_FORCERELOAD)
+			$iInet = InetGet("https://minotar.net/avatar/" & $sFileName & "/32", $sFileNameHEAD, $INET_FORCERELOAD + $INET_FORCEBYPASS)
 			If @error = 13 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
 			ElseIf $iInet <> 0 Then
@@ -1551,7 +1551,7 @@ Func _CheckForUpdate()
 
 	If _VersionCompare($iInternalVersion, $sTag) = -1 Then   ;if github is greater
 		$sUpdateLink = "https://github.com/TzarAlkex/mspc/releases/latest"
-	Return True
+		Return True
 	EndIf
 	Return False
 EndFunc
