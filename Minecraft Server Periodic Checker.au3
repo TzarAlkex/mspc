@@ -46,7 +46,6 @@
 #include <GuiButton.au3>
 #include <Constants.au3>
 #include <GuiComboBoxEx.au3>
-#include "JSMN.au3"
 #include <GuiImageList.au3>
 #include "Icons.au3"
 #include <Date.au3>
@@ -56,6 +55,7 @@
 #include "SRV_Records.au3"
 #include <WinAPIShellEx.au3>
 #include <Misc.au3>
+#include "Json.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -354,60 +354,60 @@ Func _ServerScanner()
 						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
 						$oObj.Log("JSON END")
 
-						$oJSON = Jsmn_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
+						$oJSON = Json_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
 
-						$vDescription = Jsmn_ObjGet($oJSON, "description")
+						$vDescription = Json_ObjGet($oJSON, "description")
 						Local $sDescription = ""
-						If IsObj($vDescription) Then
-							If Jsmn_ObjExists($vDescription, "extra") Then
-								$aoExtra = Jsmn_ObjGet($vDescription, "extra")
+						If Json_IsObject($vDescription) Then
+							If Json_ObjExists($vDescription, "extra") Then
+								$aoExtra = Json_ObjGet($vDescription, "extra")
 								For $iX = 0 To UBound($aoExtra) -1
-									$sDescription &= Jsmn_ObjGet($aoExtra[$iX], "text")
+									$sDescription &= Json_ObjGet($aoExtra[$iX], "text")
 								Next
 							EndIf
-							$sDescription &= Jsmn_ObjGet($vDescription, "text")
+							$sDescription &= Json_ObjGet($vDescription, "text")
 						Else
 							$sDescription &= $vDescription
 						EndIf
 						$sDescription = StringStripWS($sDescription, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
 
-						$oVersion = Jsmn_ObjGet($oJSON, "version")
-						$sVersionName = Jsmn_ObjGet($oVersion, "name")
-						$iVersionProtocol = Jsmn_ObjGet($oVersion, "protocol")
+						$oVersion = Json_ObjGet($oJSON, "version")
+						$sVersionName = Json_ObjGet($oVersion, "name")
+						$iVersionProtocol = Json_ObjGet($oVersion, "protocol")
 
-						$oPlayers = Jsmn_ObjGet($oJSON, "players")
-						$iPlayersMax = Jsmn_ObjGet($oPlayers, "max")
-						$iPlayersOnline = Jsmn_ObjGet($oPlayers, "online")
+						$oPlayers = Json_ObjGet($oJSON, "players")
+						$iPlayersMax = Json_ObjGet($oPlayers, "max")
+						$iPlayersOnline = Json_ObjGet($oPlayers, "online")
 
-						If Jsmn_ObjExists($oPlayers, "sample") Then
-							$aoSample = Jsmn_ObjGet($oPlayers, "sample")
+						If Json_ObjExists($oPlayers, "sample") Then
+							$aoSample = Json_ObjGet($oPlayers, "sample")
 							If UBound($aoSample) >= 1 Then
 								Local $asPlayers[UBound($aoSample)][2]
 								For $iX = 0 To UBound($aoSample) -1
-									$asPlayers[$iX][0] = Jsmn_ObjGet($aoSample[$iX], "name")
-									$asPlayers[$iX][1] = Jsmn_ObjGet($aoSample[$iX], "id")
+									$asPlayers[$iX][0] = Json_ObjGet($aoSample[$iX], "name")
+									$asPlayers[$iX][1] = Json_ObjGet($aoSample[$iX], "id")
 								Next
 								$oObj.Player($avList[$iY][$eServer], $avList[$iY][$ePort], $asPlayers)
 							EndIf
 						EndIf
 
-						If Jsmn_ObjExists($oJSON, "modinfo") Then
-							Local $oModinfo = Jsmn_ObjGet($oJSON, "modinfo")
-							Local $oModinfoType = Jsmn_ObjGet($oModinfo, "type")
+						If Json_ObjExists($oJSON, "modinfo") Then
+							Local $oModinfo = Json_ObjGet($oJSON, "modinfo")
+							Local $oModinfoType = Json_ObjGet($oModinfo, "type")
 
-							Local $aoModList = Jsmn_ObjGet($oModinfo, "modList")
+							Local $aoModList = Json_ObjGet($oModinfo, "modList")
 							If UBound($aoModList) >= 1 Then
 								Local $asMods[UBound($aoModList)][2]
 								For $iX = 0 To UBound($aoModList) -1
-									$asMods[$iX][0] = Jsmn_ObjGet($aoModList[$iX], "modid")
-									$asMods[$iX][1] = Jsmn_ObjGet($aoModList[$iX], "version")
+									$asMods[$iX][0] = Json_ObjGet($aoModList[$iX], "modid")
+									$asMods[$iX][1] = Json_ObjGet($aoModList[$iX], "version")
 								Next
 								$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
 							EndIf
 						EndIf
 
-						If Jsmn_ObjExists($oJSON, "favicon") Then
-							$sFavicon = Jsmn_ObjGet($oJSON, "favicon")
+						If Json_ObjExists($oJSON, "favicon") Then
+							$sFavicon = Json_ObjGet($oJSON, "favicon")
 							$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
 							$oObj.Icon($avList[$iY][$eServer], $avList[$iY][$ePort], $dPng)
 						EndIf
@@ -1535,11 +1535,11 @@ Func _CheckForUpdate()
 
 	If $asInfo[3] <> True Then Return False
 
-	$oJSON = Jsmn_Decode($sFile)
+	$oJSON = Json_Decode($sFile)
 
-	If IsObj($oJSON) = False Then Return False
+	If Json_IsObject($oJSON) = False Then Return False
 
-	$sTag = Jsmn_ObjGet($oJSON, "tag_name")
+	$sTag = Json_ObjGet($oJSON, "tag_name")
 	If StringIsDigit(StringLeft($sTag, 1)) = False Then $sTag = StringTrimLeft($sTag, 1)   ;remove the silly "v" from old versions
 
 	Local $iInternalVersion
