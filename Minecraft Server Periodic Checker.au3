@@ -425,14 +425,14 @@ Func _ServerScanner()
 						Else   ;pre 1.4 protocol
 							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 							If UBound($aRet) = 4 Then
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "n/a", $aRet[1], $aRet[2], $aRet[3], "")   ;Server online (pre 1.4 protocol)
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Beta 1.8 to 1.3", $aRet[1], $aRet[2], $aRet[3])   ;Server online (pre 1.4 protocol)
 								Switch $avList[$iY][$eProtocol]
 									Case $eProtocol2, $eProtocolAuto
 										$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
 								EndSwitch
 							Else
 								$oObj.Log("Error")
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "Error", "Error", "Error", "Error")   ;Error
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
 							EndIf
 						EndIf
 
@@ -449,8 +449,8 @@ Func _ServerScanner()
 				EndIf
 			WEnd
 
-			$oObj.Log("Offline")
-			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "", "", "", "", "")   ;Server offline
+			$oObj.Log("Unable to connect")
+			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
 			ExitLoop
 		WEnd
 	Next
@@ -561,10 +561,10 @@ Func _ServerIcon($oSelf, $sServerAddress, $iServerPort, $dIcon)
 	$asServerInfo[$iUBound][1] = $hHBmp
 EndFunc
 
-Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol)
+Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $iCurrentPlayers, $iMaxPlayers, $iProtocol = "n/a")
 	_MCStringClean($sMOTD)
 
-	If $iProtocol <> "" And $iProtocol <> "Error" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
+	If $iProtocol <> "" Then _Log("_ServerResults: Version=" & $sVersion & " Protocol=" & $iProtocol & " Players=" & $iCurrentPlayers & "/" & $iMaxPlayers & " MOTD=" & $sMOTD)
 
 	Local $iIndex = -1
 	While 1
@@ -573,7 +573,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 			If _GUICtrlListView_GetItemText($idServers, $iIndex, 1) = $iServerPort Then
 				_GUICtrlListView_SetItemText($idServers, $iIndex, $sVersion, 2)
 				If $iCurrentPlayers == "" Then
-					_GUICtrlListView_SetItemText($idServers, $iIndex, 0 & "/" & -1, 3)
+					_GUICtrlListView_SetItemText($idServers, $iIndex, "", 3)
 					If BitAnd(GUICtrlRead($idColorizeListview), $GUI_CHECKED) Then GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iIndex), 0xFF0000)
 				Else
 					$iServerCount += 1
@@ -1440,7 +1440,7 @@ Func _WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
 					If _GUICtrlButton_GetCheck($hCtrl) = $BST_CHECKED Then
 						For $iX = 0 To _GUICtrlListView_GetItemCount($idServers) -1
 							If _GUICtrlListView_GetItemChecked($idServers, $iX) Then
-								If _GUICtrlListView_GetItemText($idServers, $iX, 2) <> "" Then
+								If _GUICtrlListView_GetItemText($idServers, $iX, 3) <> "" Then
 									$asSplit = StringSplit(_GUICtrlListView_GetItemText($idServers, $iX, 3), "/")
 									If $asSplit[1] > 0 Then
 										GUICtrlSetBkColor(_GUICtrlListView_GetItemParam($idServers, $iX), 0x00FF00)
