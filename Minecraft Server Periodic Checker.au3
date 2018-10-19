@@ -1,10 +1,14 @@
 #NoTrayIcon
+#cs
+[FakeIniSectionName]
+#ce
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Comment=Minecraft? More like Mecraft!
 #AutoIt3Wrapper_Res_Description=Alert user when his favorite Minecraft server goes online
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.20
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.21
+#AutoIt3Wrapper_Res_ProductVersion=0.0.0.21
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Res_File_Add=cog.png, rt_rcdata, SETTINGS
 #AutoIt3Wrapper_Res_File_Add=Svartnos.jpg, rt_rcdata, SERVER_DEFAULT
@@ -13,7 +17,7 @@
 #AutoIt3Wrapper_Res_File_Add=Default3.png, rt_rcdata, AVATAR_DEFAULT
 #AutoIt3Wrapper_Res_File_Add=svartnos_tunga.jpg, rt_rcdata, NAUGHTY_CAT
 #AutoIt3Wrapper_Run_Au3Stripper=y
-#Au3Stripper_Parameters=/sf /sv /mi=6 /rsln
+#Au3Stripper_Parameters=/sf /sv /mi=100 /rsln
 #Au3Stripper_Ignore_Funcs=_ServerMod, _ServerLog, _ServerPlayer, _ServerIcon, _ServerResults, _ServerFinished, _LogFile, _LogConsole, _AdlibNaughtyCatShow, _AdlibNaughtyCatHide, _ServersConvertINI, _ServersAdd, _ServersDelete, _ServersLoad, _ServersSave, _ServersSetEnabled, _ServersSetProtocol, _ServersSetProtocolCurrent, _ServersSetSRVData, _ServersEnabled
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -51,6 +55,7 @@
 #include "AutoIt Pickler.au3"
 #include "SRV_Records.au3"
 #include <WinAPIShellEx.au3>
+#include <Misc.au3>
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
@@ -970,10 +975,10 @@ Func _GUICreate()
 	EndIf
 
 	$idCheckForUpdate = GUICtrlCreateCheckbox("Check for updates", 15, 205, $asSettingsSize[0] -30, 20)
-	Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "K" & Chr(0xF6) & "ttbullarIsTasty")
-	If $sCheckForUpdate = "1" Or $sCheckForUpdate = "K" & Chr(0xF6) & "ttbullarIsTasty" Then
+	Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "KöttbullarIsTasty")
+	If $sCheckForUpdate = "1" Or $sCheckForUpdate = "KöttbullarIsTasty" Then
 		GUICtrlSetState(-1, $GUI_CHECKED)
-		$aInet = InetGet("https://dl.dropbox.com/u/18344147/SoftwareUpdates/MSPC.txt", @TempDir & "\MSPC.txt", 1 + 2 + 16, 1)
+		$aInet = InetGet("https://api.github.com/repos/TzarAlkex/mspc/releases/latest", @TempDir & "\MSPC.txt", $INET_FORCERELOAD + $INET_FORCEBYPASS, 1)
 		AdlibRegister("_CheckForUpdateMaster", 100)
 		$asHint[0] = -1
 	EndIf
@@ -1529,13 +1534,26 @@ Func _CheckForUpdate()
 	FileDelete(@TempDir & "\MSPC.txt")
 
 	If $asInfo[3] <> True Then Return False
-	$aRet = StringSplit($sFile, "|")
-	If @error Then Return False
-	If $aRet[0] <> 2 Then Return False
-	If $aRet[1] <= 20 Then Return False   ;Version
 
-	$sUpdateLink = $aRet[2]
+	$oJSON = Jsmn_Decode($sFile)
+
+	If IsObj($oJSON) = False Then Return False
+
+	$sTag = Jsmn_ObjGet($oJSON, "tag_name")
+	If StringIsDigit(StringLeft($sTag, 1)) = False Then $sTag = StringTrimLeft($sTag, 1)   ;remove the silly "v" from old versions
+
+	Local $iInternalVersion
+	If @Compiled Then
+		$iInternalVersion = FileGetVersion(@AutoItExe)
+	Else
+		$iInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
+	EndIf
+
+	If _VersionCompare($iInternalVersion, $sTag) = -1 Then   ;if github is greater
+		$sUpdateLink = "https://github.com/TzarAlkex/mspc/releases/latest"
 	Return True
+	EndIf
+	Return False
 EndFunc
 
 Func _UpdateHint($sText)
