@@ -19,7 +19,7 @@
 
 #cs ----------------------------------------------------------------------------
 
- AutoIt Version: 3.3.9.22 (beta)
+ AutoIt Version: 3.3.14.5 (stable)
  Author:         AdmiralAlkex (Alexander Samuelsson)
 
  Script Function:
@@ -322,9 +322,10 @@ Func _ServerScanner()
 		EndIf
 
 		While 1
+			Local $iTimer = TimerInit()
 			While 1
 				Sleep(500)
-				$dRet = TCPRecv($iSocket, 1500, 1)
+				$dRet = TCPRecv($iSocket, 65536, 1)
 				$error = @error
 				$oObj.Log("TCPRecv @error: " & $error)
 				If $error <> 0 Then
@@ -438,6 +439,13 @@ Func _ServerScanner()
 						TCPCloseSocket($iSocket)
 						ExitLoop 2
 					EndIf
+				EndIf
+
+				If TimerDiff($iTimer) > $iTimeoutMS Then
+					$oObj.Log("Not responding")
+					$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Not responding", "", "", "")
+					TCPCloseSocket($iSocket)
+					ExitLoop 2
 				EndIf
 			WEnd
 
