@@ -128,7 +128,7 @@ Global $cIdNaughtyCat
 ;Objects
 Global $oServers
 ;Hint-ticker-thing
-Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff"]
+Global $asHint[] = [0, "Hint 1: Check items to include in scan", "Hint 2: Rightclick item to delete and stuff", "Hint 3: If the server says Version Unknown, you can try rightclicking and selecting another protocol"]
 ;Imagelist
 Global $idServerPlayersImageListDuplicate, $iListNew, $iListError, $iListDefault
 ;Inet
