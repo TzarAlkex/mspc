@@ -344,10 +344,19 @@ Func _ServerScanner()
 
 			Do
 				Sleep(100)
-				Local $dContinued = TCPRecv($iSocket, 4096, $TCP_DATA_BINARY)
+				Local $dContinued = TCPRecv($iSocket, 16384, $TCP_DATA_BINARY)
 				If $dContinued <> "" Then $dRet &= $dContinued
 				$error = @error
 				$oObj.Log("TCPRecv @error: " & $error & " BinaryLen: " & BinaryLen($dRet))
+				If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
+					If StringInStr($dRet, "00") Then
+						If _readVarInt($dRet) + 2 = BinaryLen($dRet) Then ExitLoop
+					EndIf
+				Else   ;Pre 1.7 protocols
+					If BinaryLen($dRet) > 3 Then
+						If Number(BinaryMid($dRet, 3, 1)) * 2 + 3 = BinaryLen($dRet) Then ExitLoop
+					EndIf
+				EndIf
 			Until $error <> 0 Or TimerDiff($iTimer) > $iTimeoutMS
 
 			If $dRet <> "" Then
@@ -1566,6 +1575,23 @@ EndFunc   ;==>_ArrayAdd
 #EndRegion
 
 #Region   ;Internal functions
+
+;please work 🙏
+;https://wiki.vg/Protocol#VarInt_and_VarLong
+Func _readVarInt($dBytes, $iStart = 1)
+	Local $iNumRead = 0, $iResult = 0
+	Local $dRead, $iValue
+	Do
+		$dRead = BinaryMid($dBytes, $iStart + $iNumRead, 1)
+		$iValue = BitAND($dRead, 0x7F)
+		$iResult = BitOR($iResult, BitShift($iValue, (7 * $iNumRead) * -1))
+
+		$iNumRead += 1
+		If $iNumRead > 5 Then Return False   ;VarInt is too big
+	Until BitAND($dRead, 0x80) = 0   ;loop until MSB = 0
+
+	Return $iResult
+EndFunc
 
 ;Unknown author, function found in post here http://www.autoitscript.com/forum/topic/51103-resources-udf/?p=921164
 Func _ResourceGetAsRaw($sModule, $vResType, $vResName, $iResLang = 0)
