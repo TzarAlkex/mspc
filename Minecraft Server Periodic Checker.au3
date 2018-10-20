@@ -307,11 +307,6 @@ Func _ServerScanner()
 			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
 		EndIf
 		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
-		If $iSocket = -1 Then
-			$oObj.Log("Unable to connect")
-			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
-			ContinueLoop
-		EndIf
 
 		If $iFakePort Then $avList[$iY][$ePort] = ""
 
@@ -320,6 +315,12 @@ Func _ServerScanner()
 			If $avList[$iY][$eProtocolCurrent] < $eProtocol1 Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
 
 			$oList.SetProtocolCurrent($avList[$iY][$eServer], $avList[$iY][$ePort], $avList[$iY][$eProtocolCurrent])
+		EndIf
+
+		If $iSocket = -1 Then
+			$oObj.Log("Unable to connect")
+			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
+			ContinueLoop
 		EndIf
 
 		If $avList[$iY][$eProtocol] = $eProtocol1 Or $avList[$iY][$eProtocolCurrent] = $eProtocol1 Then   ;pre 1.4 protocol
