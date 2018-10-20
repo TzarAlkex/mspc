@@ -307,6 +307,11 @@ Func _ServerScanner()
 			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
 		EndIf
 		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
+		If $iSocket = -1 Then
+			$oObj.Log("Unable to connect")
+			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
+			ContinueLoop
+		EndIf
 
 		If $iFakePort Then $avList[$iY][$ePort] = ""
 
@@ -335,136 +340,126 @@ Func _ServerScanner()
 
 		While 1
 			Local $iTimer = TimerInit()
-			While 1
-				Sleep(500)
-				$dRet = TCPRecv($iSocket, 65536, 1)
+			Local $dRet = Binary("")
+
+			Do
+				Sleep(100)
+				Local $dContinued = TCPRecv($iSocket, 4096, $TCP_DATA_BINARY)
+				If $dContinued <> "" Then $dRet &= $dContinued
 				$error = @error
-				$oObj.Log("TCPRecv @error: " & $error)
-				If $error <> 0 Then
-					TCPCloseSocket($iSocket)
+				$oObj.Log("TCPRecv @error: " & $error & " BinaryLen: " & BinaryLen($dRet))
+			Until $error <> 0 Or TimerDiff($iTimer) > $iTimeoutMS
+
+			If $dRet <> "" Then
+				If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
+					$oObj.Log("JSON START")
+					$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), $SB_UTF8))
+					$oObj.Log("JSON END")
+
+					$oJSON = Json_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), $SB_UTF8))
+					If @error Then
+						$oObj.Log("JSON Decode @error: " & @error)
+						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "JSON error", "", "", "")
+						ExitLoop
+					EndIf
+
+					$vDescription = Json_ObjGet($oJSON, "description")
+					Local $sDescription = ""
+					If Json_IsObject($vDescription) Then
+						If Json_ObjExists($vDescription, "extra") Then
+							$aoExtra = Json_ObjGet($vDescription, "extra")
+							For $iX = 0 To UBound($aoExtra) -1
+								$sDescription &= Json_ObjGet($aoExtra[$iX], "text")
+							Next
+						EndIf
+						$sDescription &= Json_ObjGet($vDescription, "text")
+					Else
+						$sDescription &= $vDescription
+					EndIf
+					$sDescription = StringStripWS($sDescription, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
+
+					$oVersion = Json_ObjGet($oJSON, "version")
+					$sVersionName = Json_ObjGet($oVersion, "name")
+					$iVersionProtocol = Json_ObjGet($oVersion, "protocol")
+
+					$oPlayers = Json_ObjGet($oJSON, "players")
+					$iPlayersMax = Json_ObjGet($oPlayers, "max")
+					$iPlayersOnline = Json_ObjGet($oPlayers, "online")
+
+					If Json_ObjExists($oPlayers, "sample") Then
+						$aoSample = Json_ObjGet($oPlayers, "sample")
+						If UBound($aoSample) >= 1 Then
+							Local $asPlayers[UBound($aoSample)][2]
+							For $iX = 0 To UBound($aoSample) -1
+								$asPlayers[$iX][0] = Json_ObjGet($aoSample[$iX], "name")
+								$asPlayers[$iX][1] = Json_ObjGet($aoSample[$iX], "id")
+							Next
+							$oObj.Player($avList[$iY][$eServer], $avList[$iY][$ePort], $asPlayers)
+						EndIf
+					EndIf
+
+					If Json_ObjExists($oJSON, "modinfo") Then
+						Local $oModinfo = Json_ObjGet($oJSON, "modinfo")
+						Local $oModinfoType = Json_ObjGet($oModinfo, "type")
+
+						Local $aoModList = Json_ObjGet($oModinfo, "modList")
+						If UBound($aoModList) >= 1 Then
+							Local $asMods[UBound($aoModList)][2]
+							For $iX = 0 To UBound($aoModList) -1
+								$asMods[$iX][0] = Json_ObjGet($aoModList[$iX], "modid")
+								$asMods[$iX][1] = Json_ObjGet($aoModList[$iX], "version")
+							Next
+							$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
+						EndIf
+					EndIf
+
+					If Json_ObjExists($oJSON, "favicon") Then
+						$sFavicon = Json_ObjGet($oJSON, "favicon")
+						$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
+						$oObj.Icon($avList[$iY][$eServer], $avList[$iY][$ePort], $dPng)
+					EndIf
+
+					;Server online (1.7+ protocol)
+					$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)
+					If $avList[$iY][$eProtocol] = $eProtocolAuto Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
+					ExitLoop
+				Else   ;Pre 1.7 protocols
+					$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
+
+					If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
+						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
+						If StringReplace($aRet[3], ".", "") >= 170 Then
+							$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
+						ElseIf $avList[$iY][$eProtocol] = $eProtocolAuto Then
+							$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol2)
+						EndIf
+					Else   ;pre 1.4 protocol
+						$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
+						If UBound($aRet) = 4 Then
+							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unknown", $aRet[1], $aRet[2], $aRet[3])   ;Server online (pre 1.4 protocol)
+							Switch $avList[$iY][$eProtocol]
+								Case $eProtocol2, $eProtocolAuto
+									$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
+							EndSwitch
+						Else
+							$oObj.Log("Error")
+							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
+						EndIf
+					EndIf
+
 					ExitLoop
 				EndIf
-
-				If $dRet <> "" Then
-
-					If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
-
-						Do
-							Sleep(100)
-							Local $dContinued = TCPRecv($iSocket, 65536, 1)
-							$dRet &= $dContinued
-							$error = @error
-							$oObj.Log("TCPRecv @error: " & $error)
-						Until $error <> 0 Or $dContinued = ""
-
-						$oObj.Log("JSON START")
-						$oObj.Log(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
-						$oObj.Log("JSON END")
-
-						$oJSON = Json_Decode(BinaryToString(BinaryMid($dRet, StringInStr($dRet, "7B") / 2), 4))
-
-						$vDescription = Json_ObjGet($oJSON, "description")
-						Local $sDescription = ""
-						If Json_IsObject($vDescription) Then
-							If Json_ObjExists($vDescription, "extra") Then
-								$aoExtra = Json_ObjGet($vDescription, "extra")
-								For $iX = 0 To UBound($aoExtra) -1
-									$sDescription &= Json_ObjGet($aoExtra[$iX], "text")
-								Next
-							EndIf
-							$sDescription &= Json_ObjGet($vDescription, "text")
-						Else
-							$sDescription &= $vDescription
-						EndIf
-						$sDescription = StringStripWS($sDescription, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES)
-
-						$oVersion = Json_ObjGet($oJSON, "version")
-						$sVersionName = Json_ObjGet($oVersion, "name")
-						$iVersionProtocol = Json_ObjGet($oVersion, "protocol")
-
-						$oPlayers = Json_ObjGet($oJSON, "players")
-						$iPlayersMax = Json_ObjGet($oPlayers, "max")
-						$iPlayersOnline = Json_ObjGet($oPlayers, "online")
-
-						If Json_ObjExists($oPlayers, "sample") Then
-							$aoSample = Json_ObjGet($oPlayers, "sample")
-							If UBound($aoSample) >= 1 Then
-								Local $asPlayers[UBound($aoSample)][2]
-								For $iX = 0 To UBound($aoSample) -1
-									$asPlayers[$iX][0] = Json_ObjGet($aoSample[$iX], "name")
-									$asPlayers[$iX][1] = Json_ObjGet($aoSample[$iX], "id")
-								Next
-								$oObj.Player($avList[$iY][$eServer], $avList[$iY][$ePort], $asPlayers)
-							EndIf
-						EndIf
-
-						If Json_ObjExists($oJSON, "modinfo") Then
-							Local $oModinfo = Json_ObjGet($oJSON, "modinfo")
-							Local $oModinfoType = Json_ObjGet($oModinfo, "type")
-
-							Local $aoModList = Json_ObjGet($oModinfo, "modList")
-							If UBound($aoModList) >= 1 Then
-								Local $asMods[UBound($aoModList)][2]
-								For $iX = 0 To UBound($aoModList) -1
-									$asMods[$iX][0] = Json_ObjGet($aoModList[$iX], "modid")
-									$asMods[$iX][1] = Json_ObjGet($aoModList[$iX], "version")
-								Next
-								$oObj.Mod($avList[$iY][$eServer], $avList[$iY][$ePort], $oModinfoType, $asMods)
-							EndIf
-						EndIf
-
-						If Json_ObjExists($oJSON, "favicon") Then
-							$sFavicon = Json_ObjGet($oJSON, "favicon")
-							$dPng = _B64Decode(StringStripWS(StringTrimLeft($sFavicon, StringInStr($sFavicon, ",")), $STR_STRIPALL))
-							$oObj.Icon($avList[$iY][$eServer], $avList[$iY][$ePort], $dPng)
-						EndIf
-
-						;Server online (1.7+ protocol)
-						$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)
-						If $avList[$iY][$eProtocol] = $eProtocolAuto Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
-						TCPCloseSocket($iSocket)
-						ExitLoop 2
-					Else   ;Pre 1.7 protocols
-						$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
-
-						If UBound($aRet) = 7 Then   ;1.4 - 1.7 protocol
-							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $aRet[3], $aRet[4], $aRet[5], $aRet[6], $aRet[2])   ;Server online (1.4 - 1.7 protocol)
-							If StringReplace($aRet[3], ".", "") >= 170 Then
-								$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
-							ElseIf $avList[$iY][$eProtocol] = $eProtocolAuto Then
-								$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol2)
-							EndIf
-						Else   ;pre 1.4 protocol
-							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
-							If UBound($aRet) = 4 Then
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unknown", $aRet[1], $aRet[2], $aRet[3])   ;Server online (pre 1.4 protocol)
-								Switch $avList[$iY][$eProtocol]
-									Case $eProtocol2, $eProtocolAuto
-										$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
-								EndSwitch
-							Else
-								$oObj.Log("Error")
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
-							EndIf
-						EndIf
-
-						TCPCloseSocket($iSocket)
-						ExitLoop 2
-					EndIf
-				EndIf
-
-				If TimerDiff($iTimer) > $iTimeoutMS Then
-					$oObj.Log("Not responding")
-					$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Not responding", "", "", "")
-					TCPCloseSocket($iSocket)
-					ExitLoop 2
-				EndIf
-			WEnd
-
-			$oObj.Log("Unable to connect")
-			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
-			ExitLoop
+			ElseIf TimerDiff($iTimer) > $iTimeoutMS Then
+				$oObj.Log("Not responding")
+				$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Not responding", "", "", "")
+				ExitLoop
+			Else
+				$oObj.Log("Error")
+				$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
+				ExitLoop
+			EndIf
 		WEnd
+		TCPCloseSocket($iSocket)
 	Next
 
 	TCPShutdown()
