@@ -85,6 +85,13 @@ If $CmdLine[0] > 1 And $CmdLine[1] = "/ServerScanner" Then
 	_ServerScanner()
 EndIf
 
+Global $iInternalVersion
+If @Compiled Then
+	$iInternalVersion = FileGetVersion(@AutoItExe)
+Else
+	$iInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
+EndIf
+
 
 _GDIPlus_Startup()
 _AutoItObject_StartUp()
@@ -430,7 +437,7 @@ Func _ServerScanner()
 						Else   ;pre 1.4 protocol
 							$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), "§")
 							If UBound($aRet) = 4 Then
-								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Beta 1.8 to 1.3", $aRet[1], $aRet[2], $aRet[3])   ;Server online (pre 1.4 protocol)
+								$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unknown", $aRet[1], $aRet[2], $aRet[3])   ;Server online (pre 1.4 protocol)
 								Switch $avList[$iY][$eProtocol]
 									Case $eProtocol2, $eProtocolAuto
 										$oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol1)
@@ -812,7 +819,7 @@ Func _GUICreate()
 	Local $iGuiX = 832
 	$iGuiY = 480
 
-	$hGui = GUICreate(StringTrimRight(@ScriptName, 4), $iGuiX, $iGuiY, -1, -1)
+	$hGui = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $iInternalVersion, $iGuiX, $iGuiY, -1, -1)
 
 	$aiGuiMin = WinGetPos($hGui)
 
@@ -834,7 +841,7 @@ Func _GUICreate()
 	GUICtrlCreateMenuItem("", $idServerContext)
 	GUICtrlCreateMenuItem("Select protocol:", $idServerContext)
 	GUICtrlSetState(-1, $GUI_DISABLE)
-	$idServerMenuAuto = GUICtrlCreateMenuItem("Find for me (might require multiple scans)", $idServerContext, -1, 1)
+	$idServerMenuAuto = GUICtrlCreateMenuItem("Find out for me (might require multiple scans)", $idServerContext, -1, 1)
 	$idServerMenuOld = GUICtrlCreateMenuItem("Beta 1.8 to 1.3", $idServerContext, -1, 1)
 	$idServerMenuTrue = GUICtrlCreateMenuItem("1.4 to 1.6", $idServerContext, -1, 1)
 	$idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext, -1, 1)
@@ -1541,13 +1548,6 @@ Func _CheckForUpdate()
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 	If StringIsDigit(StringLeft($sTag, 1)) = False Then $sTag = StringTrimLeft($sTag, 1)   ;remove the silly "v" from old versions
-
-	Local $iInternalVersion
-	If @Compiled Then
-		$iInternalVersion = FileGetVersion(@AutoItExe)
-	Else
-		$iInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
-	EndIf
 
 	If _VersionCompare($iInternalVersion, $sTag) = -1 Then   ;if github is greater
 		$sUpdateLink = "https://github.com/TzarAlkex/mspc/releases/latest"
