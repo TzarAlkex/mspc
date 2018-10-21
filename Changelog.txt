@@ -1,11 +1,20 @@
+0.0.0.21
+*Improved protocol menu
+*Better update checking (uses GitHub)
+*Fixes and improvements to networking
+*Fixed player heads (uses Minotar)
+*Updates for compiler stuff and libs
+
 0.0.0.20
 *Made it possible to close Settings GUI by clicking outside it
 *Fixed loading empty serverlists
+
 0.0.0.19
 *Servers.ini is now Servers.dat (more flexible, efficient and breakable; we will see how that works out)
 *Added support for SRV records
 *Added automatic detection of server protocol
 *MOTD improved.
+
 0.0.0.18
 *Improved 1.7 support
 *Added manually setting MC version to server right-click menu
@@ -15,6 +24,7 @@
 *GUI work
 *Created naughty list and put Pc_Girl in it
 *Added surprise for member(s) of naughty list
+
 0.0.0.17
 *Always show player numbers
 *Added support for domain names
@@ -26,21 +36,27 @@
 *Added Avatar cleanup PLUS some GUI fixes
 *Newly added servers are ON by default
 *GUI Redesign
+
 0.0.0.16
 *Added User adjustable Timeout to connection attempts
+
 0.0.0.15
 *Fixed console spam
 *Spelling (never = newer)
 *Faster scanning
 *Bigger and centralized font for tray icon
+
 0.0.0.14
 *Better error handling
 *Adds support for old MP protocol (1.3ish and older) (suggested by Tycooner)
+
 0.0.0.13
 *Fixed up update notification
+
 0.0.0.12
 *Slightly smaller server bar
 *Recently added servers were scanned even though they were not checked
+
 0.0.0.11
 *ListView colors can be enabled/disabled live
 *Scanning interval is now defined in seconds instead of minutes
@@ -48,12 +64,16 @@
 *Limited GUI resizing
 *Empty servers colored yellow (suggested by Tycooner)
 *Added server bar (suggested by Tycooner)
+
 0.0.0.10
 *Really fixed update check
+
 0.0.0.9
 *Fixed update check
+
 0.0.0.8
 *Better update checking
+
 0.0.0.7
 *Implemented checkboxes for listview items
 *Can click anywhere in listview to select line
