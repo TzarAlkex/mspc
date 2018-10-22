@@ -231,7 +231,7 @@ Func _ServerCheck()
 	GUICtrlSetData($idScanNow, "Scanning under way")
 	GUICtrlSetState($idScanNow, $GUI_DISABLE)
 	AdlibRegister("_WorkingAnimation")
-	If $asHint[0] <> -1 Then AdlibRegister("_HintRemove", 20)
+	AdlibRegister("_HintRemove", 20)
 
 	If @Compiled Then
 		$iPid = Run(FileGetShortName(@AutoItExe) & " /ServerScanner " & @AutoItPID)
@@ -878,7 +878,7 @@ Func _GUICreate()
 		IniDelete(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "MinutesBetweenScans")
 	EndIf
 
-	$cIdHints = GUICtrlCreateLabel("Welcome!!", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
+	$cIdHints = GUICtrlCreateLabel(" ", 10, $iGuiY - 35, 485, 25, $SS_CENTERIMAGE)
 
 	$cIdSettings = GUICtrlCreateCheckbox("Settings " & ChrW(0x25B2), 500, $iGuiY - 35, 105, 25, $BS_PUSHLIKE)
 	Local $hSettingsImageList = _GUIImageList_Create(32, 32, 5, 3, 1)
@@ -990,9 +990,7 @@ Func _GUICreate()
 	Local $sCheckForUpdate = IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "CheckForUpdate", "KöttbullarIsTasty")
 	If $sCheckForUpdate = "1" Or $sCheckForUpdate = "KöttbullarIsTasty" Then
 		GUICtrlSetState(-1, $GUI_CHECKED)
-		$aInet = InetGet("https://api.github.com/repos/TzarAlkex/mspc/releases/latest", @TempDir & "\MSPC.txt", $INET_FORCERELOAD + $INET_FORCEBYPASS, 1)
-		AdlibRegister("_CheckForUpdateMaster", 100)
-		$asHint[0] = -1
+		_CheckForUpdateMaster()
 	EndIf
 
 
@@ -1175,7 +1173,7 @@ Func _DownloadPlayerImages()
 		Else
 			DirCreate(@ScriptDir & "\TemporaryFiles")
 
-			$iInet = InetGet("https://minotar.net/avatar/" & $sFileName & "/32", $sFileNameHEAD, $INET_FORCERELOAD + $INET_FORCEBYPASS)
+			$iInet = InetGet("https://minotar.net/avatar/" & $sFileName & "/32", $sFileNameHEAD, $INET_FORCEBYPASS)
 			If @error = 13 Then
 				_GUICtrlListView_SetItemImage($idServerPlayers, $iX, $iListDefault)
 			ElseIf $iInet <> 0 Then
@@ -1528,26 +1526,13 @@ Func _HintAdd()
 EndFunc
 
 Func _CheckForUpdateMaster()
-	$iCheck = _CheckForUpdate()
-	If $iCheck Then
-		_UpdateHint("Update found, click to open website")
-	ElseIf $iCheck = False Then
-		_UpdateHint("No update found")
-	EndIf
+	_ArrayInsert($asHint, 1, (_CheckForUpdate()) ? "Update found, click to open website" : "No update found")
 EndFunc
 
 Func _CheckForUpdate()
-	Local $asInfo = InetGetInfo($aInet)
-	If $asInfo[2] <> True Then Return Null
+	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/mspc/releases/latest", $INET_FORCEBYPASS)
 
-	AdlibUnRegister("_CheckForUpdateMaster")
-	InetClose($aInet)
-	$sFile = FileRead(@TempDir & "\MSPC.txt")
-	FileDelete(@TempDir & "\MSPC.txt")
-
-	If $asInfo[3] <> True Then Return False
-
-	$oJSON = Json_Decode($sFile)
+	$oJSON = Json_Decode($dData)
 
 	If Json_IsObject($oJSON) = False Then Return False
 
@@ -1560,18 +1545,6 @@ Func _CheckForUpdate()
 	EndIf
 	Return False
 EndFunc
-
-Func _UpdateHint($sText)
-	_ArrayAdd2($asHint, $sText)
-	$asHint[0] = UBound($asHint) -2
-	AdlibRegister("_HintRemove", 20)
-EndFunc
-
-Func _ArrayAdd2(ByRef $avArray, $vValue)
-	Local $iUBound = UBound($avArray)
-	ReDim $avArray[$iUBound + 1]
-	$avArray[$iUBound] = $vValue
-EndFunc   ;==>_ArrayAdd
 
 #EndRegion
 
