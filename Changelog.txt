@@ -1,4 +1,5 @@
 0.0.0.21
+*Added Bedrock Edition protocol
 *Improved protocol menu
 *Better update checking (uses GitHub)
 *Fixes and improvements to networking

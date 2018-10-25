@@ -61,10 +61,16 @@ Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
 Opt("GUIResizeMode", $GUI_DOCKALL)
 
-Global Const $iDefaultPort = 25565
+Global Const $iPortJava = 25565, $iPortBedrock = 19132
 
 Global Enum $eServer, $ePort, $eEnabled, $eProtocol, $eSRVData, $eProtocolCurrent, $eServerlistMaxCol
-Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3, $eProtocolMax
+Global Enum $eProtocolAuto, $eProtocol1, $eProtocol2, $eProtocol3, $eProtocolBedrock, $eProtocolMax
+
+Global $asProtocolDesc[$eProtocolMax]
+$asProtocolDesc[$eProtocol1] = "Beta 1.8 to 1.3"
+$asProtocolDesc[$eProtocol2] = "1.4 to 1.6"
+$asProtocolDesc[$eProtocol3] = "1.7 and later"
+$asProtocolDesc[$eProtocolBedrock] = "Bedrock Edition"
 
 Global $sMyCLSID = "AutoIt.ServerChecker"
 Global $sMyCLSID2 = "AutoIt.ServerCheckerList"
@@ -118,7 +124,7 @@ Global $hSettingsGui
 Global $hNaughtyCatGui
 ;Controls
 Global $idIP, $idAdd, $idScanNow
-Global $idServers, $idServerDelete, $idServerShowPopup, $idServerMenuAuto, $idServerMenuOld, $idServerMenuTrue, $idServerMenuNew
+Global $idServers, $idServerDelete, $idServerShowPopup, $idServerMenuAuto, $idServerMenuOld, $idServerMenuTrue, $idServerMenuNew, $idServerMenuBedrock
 Global $cIdHints, $cIdSettings, $idPopupDummy
 Global $idServerImage, $idServerProtocol, $idServerPlayers, $idDeleteAvatars
 Global $idSeconds, $cIdTimeout, $hTimeout
@@ -258,14 +264,20 @@ Func _ScanningCrashedReset()
 	AdlibUnRegister("_ScanningCrashedReset")
 EndFunc
 
+Func _asProtocolDesc($iProtocol, $iProtocolCurrent)
+	Local $iToGet = $iProtocol
+	If $iToGet = $eProtocolAuto Then $iToGet = $iProtocolCurrent
+	Return '"' & $asProtocolDesc[$iToGet] & '"'
+EndFunc
+
 Func _ServerScanner()
-	Local $iSocket, $iFakePort
+	Local $iSocket
 	Local $oObj = ObjGet($sMyCLSID & "." & $CmdLine[2])
 	Local $oList = ObjGet($sMyCLSID2 & "." & $CmdLine[2])
 
 	$avList = $oList.Enabled()
 
-	TCPStartup()
+	TCPStartup()   ;also initialize UDP
 
 	$iTimeoutSeconds = Int(IniRead(@ScriptDir & "\Minecraft Server Periodic Checker.ini", "General", "TimeoutSeconds", "HamburgareIsTasty"))
 	If $iTimeoutSeconds = 0 Then $iTimeoutSeconds = 10
@@ -277,13 +289,12 @@ Func _ServerScanner()
 			ContinueLoop
 		EndIf
 
-		$iFakePort = False
+		Local $iConnectPort = $avList[$iY][$ePort]
 
-		If $avList[$iY][$ePort] = "" Then
+		If $iConnectPort = "" Then
 			If IsArray($avList[$iY][$eSRVData]) Then
 				$avTemp = $avList[$iY][$eSRVData]
-				$avList[$iY][$ePort] = $avTemp[0][2]
-				$iFakePort = True
+				$iConnectPort = $avTemp[0][2]
 			Else
 				$avSRV = SRVRecords("_minecraft._tcp." & $avList[$iY][$eServer])
 
@@ -292,42 +303,55 @@ Func _ServerScanner()
 				Next
 
 				If IsArray($avSRV) Then
-					$oList.SetSRVData($avList[$iY][$eServer], $avList[$iY][$ePort], $avSRV)
-					$avList[$iY][$ePort] = $avSRV[0][2]
+					$oList.SetSRVData($avList[$iY][$eServer], $iConnectPort, $avSRV)
+					$iConnectPort = $avSRV[0][2]
 				Else
-					$avList[$iY][$ePort] = $iDefaultPort
+					If $avList[$iY][$eProtocol] = $eProtocolBedrock Or $avList[$iY][$eProtocolCurrent] = $eProtocolBedrock Then
+						$iConnectPort = $iPortBedrock
+					Else
+						$iConnectPort = $iPortJava
+					EndIf
 				EndIf
-				$iFakePort = True
 			EndIf
 		EndIf
 
-		If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
-			$iSocket = _TCPConnect($avList[$iY][$eServer], $avList[$iY][$ePort], $iTimeoutMS)
-		Else
-			$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $avList[$iY][$ePort], $iTimeoutMS)
-		EndIf
-		$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " /Socket=" & $iSocket & " /Error=" & @error)
-
-		If $iFakePort Then $avList[$iY][$ePort] = ""
-
 		If $avList[$iY][$eProtocol] = $eProtocolAuto Then
-			$avList[$iY][$eProtocolCurrent] -= 1
-			If $avList[$iY][$eProtocolCurrent] < $eProtocol1 Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
+			If $avList[$iY][$eProtocolCurrent] = "" Then
+				$avList[$iY][$eProtocolCurrent] = $eProtocol3
+			Else
+				$avList[$iY][$eProtocolCurrent] -= 1
+				If $avList[$iY][$eProtocolCurrent] <= $eProtocolAuto Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
+			EndIf
 
 			$oList.SetProtocolCurrent($avList[$iY][$eServer], $avList[$iY][$ePort], $avList[$iY][$eProtocolCurrent])
 		EndIf
 
-		If $iSocket = -1 Then
+		Local $sDesc = _asProtocolDesc($avList[$iY][$eProtocol], $avList[$iY][$eProtocolCurrent])
+		If $avList[$iY][$eProtocol] = $eProtocolBedrock Or $avList[$iY][$eProtocolCurrent] = $eProtocolBedrock Then
+			If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
+				$iSocket = UDPOpen($avList[$iY][$eServer], $iConnectPort)
+			Else
+				$iSocket = UDPOpen(TCPNameToIP($avList[$iY][$eServer]), $iConnectPort)
+			EndIf
+			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " using " & $sDesc & " protocol /Socket=" & $iSocket[1] & " /Error=" & @error)
+		Else
+			If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
+				$iSocket = _TCPConnect($avList[$iY][$eServer], $iConnectPort, $iTimeoutMS)
+			Else
+				$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $iConnectPort, $iTimeoutMS)
+			EndIf
+			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " using " & $sDesc & " protocol /Socket=" & $iSocket & " /Error=" & @error)
+		EndIf
+
+		If $iSocket = -1 Or (IsArray($iSocket) And $iSocket[0] = 0) Then
 			$oObj.Log("Unable to connect")
 			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unable to connect", "", "", "")
 			ContinueLoop
 		EndIf
 
 		If $avList[$iY][$eProtocol] = $eProtocol1 Or $avList[$iY][$eProtocolCurrent] = $eProtocol1 Then   ;pre 1.4 protocol
-			$oObj.Log("pre 1.4 protocol")
 			TCPSend($iSocket, Binary("0xFE"))
 		ElseIf $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
-			$oObj.Log("1.7+ protocol")
 			$bTemp = Binary("0x0004" & Hex(BinaryLen($avList[$iY][$eServer]), 2)) & Binary($avList[$iY][$eServer]) & Hex($avList[$iY][$ePort], 4) & "01" & "0100"
 			$bTemp = Binary("0x" & Hex(BinaryLen($bTemp) -2, 2)) & StringTrimLeft($bTemp, 2)
 			;first byte (0x!0E!0004) should be total length
@@ -335,30 +359,47 @@ Func _ServerScanner()
 			$bRequest = "0100"
 			TCPSend($iSocket, $bTemp)
 		ElseIf $avList[$iY][$eProtocol] = $eProtocol2 Or $avList[$iY][$eProtocolCurrent] = $eProtocol2 Then   ;1.4 - 1.7 protocol
-			$oObj.Log("1.4 - 1.7 protocol")
 			TCPSend($iSocket, Binary("0xFE01"))
+		ElseIf $avList[$iY][$eProtocol] = $eProtocolBedrock Or $avList[$iY][$eProtocolCurrent] = $eProtocolBedrock Then   ;RakNet Unconnected Ping (Bedrock Edition)
+			;https://github.com/pavel-grom/php-minecraft-pe-query/blob/master/MCPEQuery.php
+			UDPSend($iSocket, Binary("0x01000000000000000000FFFF00FEFEFEFEFDFDFDFD123456780000000000000000"))
 		EndIf
 
 		While 1
 			Local $iTimer = TimerInit()
 			Local $dRet = Binary("")
 
-			Do
-				Sleep(100)
-				Local $dContinued = TCPRecv($iSocket, 16384, $TCP_DATA_BINARY)
-				If $dContinued <> "" Then $dRet &= $dContinued
-				$error = @error
-				$oObj.Log("TCPRecv @error: " & $error & " BinaryLen: " & BinaryLen($dRet))
-				If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
-					If StringInStr($dRet, "00") Then
-						If _readVarInt($dRet) + 2 = BinaryLen($dRet) Then ExitLoop
+			If $avList[$iY][$eProtocol] = $eProtocolBedrock Or $avList[$iY][$eProtocolCurrent] = $eProtocolBedrock Then   ;Bedrock Edition protocol
+				Do
+					Sleep(100)
+					Local $dContinued = UDPRecv($iSocket, 16384, $UDP_DATA_BINARY)
+					If $dContinued <> "" Then $dRet &= $dContinued
+					$error = @error
+					$oObj.Log("UDPRecv @error: " & $error & " BinaryLen: " & BinaryLen($dRet))
+					If BinaryLen($dRet) > 35 Then
+						If BinaryMid($dRet, 35, 1) = BinaryLen(BinaryMid($dRet, 36)) Then ExitLoop   ;should technically be BinaryMid 34 2, but binary is stupid and I can't get it to work?
 					EndIf
-				Else   ;Pre 1.7 protocols
-					If BinaryLen($dRet) > 3 Then
-						If Number(BinaryMid($dRet, 3, 1)) * 2 + 3 = BinaryLen($dRet) Then ExitLoop
+				Until $error <> 0 Or TimerDiff($iTimer) > $iTimeoutMS
+				UDPCloseSocket($iSocket)
+			Else
+				Do
+					Sleep(100)
+					Local $dContinued = TCPRecv($iSocket, 16384, $TCP_DATA_BINARY)
+					If $dContinued <> "" Then $dRet &= $dContinued
+					$error = @error
+					$oObj.Log("TCPRecv @error: " & $error & " BinaryLen: " & BinaryLen($dRet))
+					If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
+						If StringInStr($dRet, "00") Then
+							If _readVarInt($dRet) + 2 = BinaryLen($dRet) Then ExitLoop
+						EndIf
+					Else   ;Pre 1.7 protocols
+						If BinaryLen($dRet) > 3 Then
+							If Number(BinaryMid($dRet, 3, 1)) * 2 + 3 = BinaryLen($dRet) Then ExitLoop
+						EndIf
 					EndIf
-				EndIf
-			Until $error <> 0 Or TimerDiff($iTimer) > $iTimeoutMS
+				Until $error <> 0 Or TimerDiff($iTimer) > $iTimeoutMS
+				TCPCloseSocket($iSocket)
+			EndIf
 
 			If $dRet <> "" Then
 				If $avList[$iY][$eProtocol] = $eProtocol3 Or $avList[$iY][$eProtocolCurrent] = $eProtocol3 Then   ;1.7+ protocol
@@ -433,6 +474,25 @@ Func _ServerScanner()
 					$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], $sVersionName, $sDescription, $iPlayersOnline, $iPlayersMax, $iVersionProtocol)
 					If $avList[$iY][$eProtocol] = $eProtocolAuto Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocol3)
 					ExitLoop
+				ElseIf BinaryMid($dRet, 1, 1) = 0x1C Then   ;RakNet Unconnected Pong (Bedrock Edition)
+					If BinaryToString(BinaryMid($dRet, 36, 5), $SB_UTF8) = "MCPE;" Then
+						$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 41), $SB_UTF8), ";", $STR_NOCOUNT)
+						If UBound($aRet) > 5 Then
+							;0=MOTD✔
+							;1=protocol version?
+							;2=game version✔
+							;3=current players✔
+							;4=max players✔
+							;5=seed? some sort of weird number?
+							;6=world name✔
+							;7=gamemode✔
+							;8=either not exist, empty or number "1", wut?
+							;9=empty the only time I saw it
+							$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Unknown", $aRet[0], $aRet[3], $aRet[4], $aRet[1])   ;Server online (Bedrock Edition protocol)
+							If $avList[$iY][$eProtocol] = $eProtocolAuto Then $oList.SetProtocol($avList[$iY][$eServer], $avList[$iY][$ePort], $eProtocolBedrock)
+							ExitLoop
+						EndIf
+					EndIf
 				Else   ;Pre 1.7 protocols
 					$aRet = StringSplit(BinaryToString(BinaryMid($dRet, 4), 3), Chr(0))
 
@@ -468,8 +528,10 @@ Func _ServerScanner()
 				$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
 				ExitLoop
 			EndIf
+			$oObj.Log("Error")
+			$oObj.Results($avList[$iY][$eServer], $avList[$iY][$ePort], "Error", "", "", "")
+			ExitLoop
 		WEnd
-		TCPCloseSocket($iSocket)
 	Next
 
 	TCPShutdown()
@@ -611,6 +673,7 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 				_GUICtrlListView_SetItemText($idServers, $iIndex, $sMOTD, 4)
 
 				_GUICtrlListView_SetColumnWidth($idServers, 2, $LVSCW_AUTOSIZE_USEHEADER)
+				_GUICtrlListView_SetColumnWidth($idServers, 3, $LVSCW_AUTOSIZE_USEHEADER)
 				_GUICtrlListView_SetColumnWidth($idServers, 4, $LVSCW_AUTOSIZE_USEHEADER)
 
 				ExitLoop
@@ -700,13 +763,13 @@ Func _ServersConvertINI($oSelf)
 	EndIf
 EndFunc
 
-Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $sProtocol)
+Func _ServersAdd($oSelf, $sServer, $sPort, $bEnabled, $iProtocol)
 	Local $avList = $oSelf.List, $iUBound = UBound($avList)
 	ReDim $avList[$iUBound +1][$eServerlistMaxCol]
 	$avList[$iUBound][$eServer] = $sServer
 	$avList[$iUBound][$ePort] = $sPort
 	$avList[$iUBound][$eEnabled] = $bEnabled
-	$avList[$iUBound][$eProtocol] = $sProtocol
+	$avList[$iUBound][$eProtocol] = $iProtocol
 
 	$oSelf.List = $avList
 EndFunc
@@ -753,11 +816,11 @@ Func _ServersSetEnabled($oSelf, $sServer, $sPort, $bEnabled)
 	Next
 EndFunc
 
-Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
+Func _ServersSetProtocol($oSelf, $sServer, $sPort, $iProtocol)
 	For $iX = 0 To UBound($oSelf.List) -1
 		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
 			$avList = $oSelf.List
-			$avList[$iX][$eProtocol] = $sProtocol
+			$avList[$iX][$eProtocol] = $iProtocol
 			$avList[$iX][$eProtocolCurrent] = ""
 			$oSelf.List = $avList
 			ExitLoop
@@ -765,11 +828,11 @@ Func _ServersSetProtocol($oSelf, $sServer, $sPort, $sProtocol)
 	Next
 EndFunc
 
-Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $sProtocolCurrent)
+Func _ServersSetProtocolCurrent($oSelf, $sServer, $sPort, $iProtocolCurrent)
 	For $iX = 0 To UBound($oSelf.List) -1
 		If $oSelf.List[$iX][$eServer] = $sServer And $oSelf.List[$iX][$ePort] = $sPort Then
 			$avList = $oSelf.List
-			$avList[$iX][$eProtocolCurrent] = $sProtocolCurrent
+			$avList[$iX][$eProtocolCurrent] = $iProtocolCurrent
 			$oSelf.List = $avList
 			ExitLoop
 		EndIf
@@ -850,6 +913,7 @@ Func _GUICreate()
 	$idServerMenuOld = GUICtrlCreateMenuItem("Beta 1.8 to 1.3", $idServerContext, -1, 1)
 	$idServerMenuTrue = GUICtrlCreateMenuItem("1.4 to 1.6", $idServerContext, -1, 1)
 	$idServerMenuNew = GUICtrlCreateMenuItem("1.7 and later", $idServerContext, -1, 1)
+	$idServerMenuBedrock = GUICtrlCreateMenuItem("Bedrock Edition", $idServerContext, -1, 1)
 
 	_IniClean()
 
@@ -1069,6 +1133,8 @@ Func _GUIMainLoop()
 				_ServerVersionSet($eProtocol2)
 			Case $idServerMenuNew
 				_ServerVersionSet($eProtocol3)
+			Case $idServerMenuBedrock
+				_ServerVersionSet($eProtocolBedrock)
 			Case $cIdHints
 				If $sUpdateLink <> "" Then ShellExecute($sUpdateLink)
 			Case $cIdSettings
@@ -1378,6 +1444,7 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					GUICtrlSetState($idServerMenuOld, $GUI_UNCHECKED)
 					GUICtrlSetState($idServerMenuTrue, $GUI_UNCHECKED)
 					GUICtrlSetState($idServerMenuNew, $GUI_UNCHECKED)
+					GUICtrlSetState($idServerMenuBedrock, $GUI_UNCHECKED)
 
 					$tInfo = DllStructCreate($tagNMITEMACTIVATE, $ilParam)
 					$iIndex = DllStructGetData($tInfo, "Index")
@@ -1391,8 +1458,10 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 											GUICtrlSetState($idServerMenuOld, $GUI_CHECKED)
 										Case $eProtocol2
 											GUICtrlSetState($idServerMenuTrue, $GUI_CHECKED)
-										Case Else
+										Case $eProtocol3, ""
 											GUICtrlSetState($idServerMenuNew, $GUI_CHECKED)
+										Case $eProtocolBedrock
+											GUICtrlSetState($idServerMenuBedrock, $GUI_CHECKED)
 									EndSwitch
 								Case $eProtocol1
 									GUICtrlSetState($idServerMenuOld, $GUI_CHECKED)
@@ -1400,6 +1469,8 @@ Func _WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 									GUICtrlSetState($idServerMenuTrue, $GUI_CHECKED)
 								Case $eProtocol3
 									GUICtrlSetState($idServerMenuNew, $GUI_CHECKED)
+								Case $eProtocolBedrock
+									GUICtrlSetState($idServerMenuBedrock, $GUI_CHECKED)
 							EndSwitch
 							Return $GUI_RUNDEFMSG
 						EndIf
