@@ -5,14 +5,7 @@ Compile or running from source
 1. Install AutoIt v3 from http://autoitscript.com/
 Optionally  install SciTE4AutoIt3 from same website for more options when running/compiling
 
-2. MSPC requires the following three files, download the UDFs from the links and put the required file in the same folder as "Minecraft Server Periodic Checker.au3"
-
-AutoItObject.au3 - http://www.autoitscript.com/forum/topic/110379-autoitobject-udf/
-Json.au3 & BinaryCall.au3 - http://www.autoitscript.com/forum/topic/148114-jsmn-a-non-strict-json-udf/
-Icons.au3 - http://www.autoitscript.com/forum/topic/92675-icons-udf/
-Autoit Pickler.au3 - http://www.autoitscript.com/forum/topic/129823-autoit-pickler-freeze-variables-and-commit-them-to-disk/
-
-3. Open "Minecraft Server Periodic Checker.au3" in SciTE and either:
+2. Open "Minecraft Server Periodic Checker.au3" in SciTE and either:
 *Tools > Compile
 *Tools > Go
 

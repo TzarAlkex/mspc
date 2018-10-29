@@ -39,7 +39,7 @@
 #include <ComboConstants.au3>
 #include <Array.au3>
 #Au3Stripper_Off
-#include "AutoitObject.au3"
+#include "Includes\AutoitObject.au3"
 #Au3Stripper_On
 #include <GDIPlus.au3>
 #include <WinAPI.au3>
@@ -47,15 +47,15 @@
 #include <Constants.au3>
 #include <GuiComboBoxEx.au3>
 #include <GuiImageList.au3>
-#include "Icons.au3"
+#include "Includes\Icons.au3"
 #include <Date.au3>
 #include <InetConstants.au3>
 #include <FontConstants.au3>
-#include "AutoIt Pickler.au3"
-#include "SRV_Records.au3"
+#include "Includes\AutoIt Pickler.au3"
+#include "Includes\SRV_Records.au3"
 #include <WinAPIShellEx.au3>
 #include <Misc.au3>
-#include "Json.au3"
+#include "Includes\Json.au3"
 
 Opt("TrayAutoPause", 0)
 Opt("TrayIconDebug", 1)
