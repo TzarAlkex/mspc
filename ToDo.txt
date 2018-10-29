@@ -1,7 +1,8 @@
 *Sometimes the ScanNow button doesn't update its text properly (but it still functions like it should).
 *Make GUI resizable (?)
-*Investigate for possible future usage http://www.autoitscript.com/forum/index.php?showtopic=90545
+*Investigate for possible future usage https://www.autoitscript.com/forum/topic/90545-_filefindex-get-more-from-filefolder-searches/
 *Find out why _GUICtrlListView_GetItemText() doesn't work as expected in rev. 24 and report to maintainers
 *Investigate for possible future usage https://www.autoitscript.com/forum/topic/194873-wsa-error-to-text/
 *Investigate for possible future usage https://docs.microsoft.com/en-us/windows/desktop/WinSock/windows-sockets-error-codes-2
 *Investigate for possible future usage https://www.autoitscript.com/forum/topic/181645-winsock-udf/ (_TCPRecv doesn't quite work, at least in binary mode which I need!)
+*Make it possible to change the port - https://www.autoitscript.com/forum/topic/118460-edit-listview-subitem/?do=findComment&comment=824149
