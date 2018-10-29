@@ -14,15 +14,15 @@
 #include <Constants.au3>
 
 ;Delete old release
-FileDelete(@UserProfileDir & "\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip")
+FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.zip")
 
 ;Creates and uploads new archive
-Local $iPID = Run('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a -x*.png "' & @UserProfileDir & '\Dropbox\Public\SoftwareUpdates\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "ReadMe.txt" "TemporaryFiles"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+Local $iPID = Run('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a -x*.png "' & @ScriptDir & '\Minecraft Server Periodic Checker.zip" "Changelog.txt" "Minecraft Server Periodic Checker.exe" "ToDo.txt" "Credits.txt" "TemporaryFiles"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 ProcessWaitClose($iPID)
 Local $sOutput = StdoutRead($iPID)
 ConsoleWrite($sOutput & @LF)
 
 ;Clean folder
 FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.au3.tmp")
-FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker_Obfuscated.au3")
+FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker_stripped.au3")
 FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.exe")
