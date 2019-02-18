@@ -21,8 +21,3 @@ Local $iPID = Run('"' & @ProgramFilesDir & '\WinRAR\rar.exe" a -x*.png "' & @Scr
 ProcessWaitClose($iPID)
 Local $sOutput = StdoutRead($iPID)
 ConsoleWrite($sOutput & @LF)
-
-;Clean folder
-FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.au3.tmp")
-FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker_stripped.au3")
-FileDelete(@ScriptDir & "\Minecraft Server Periodic Checker.exe")
