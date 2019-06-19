@@ -333,14 +333,14 @@ Func _ServerScanner()
 			Else
 				$iSocket = UDPOpen(TCPNameToIP($avList[$iY][$eServer]), $iConnectPort)
 			EndIf
-			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " using " & $sDesc & " protocol /Socket=" & $iSocket[1] & " /Error=" & @error)
+			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & ":" & $iConnectPort & " using " & $sDesc & " protocol /Socket=" & $iSocket[1] & " /Error=" & @error)
 		Else
 			If StringIsDigit(StringReplace($avList[$iY][$eServer], ".", "")) Then
 				$iSocket = _TCPConnect($avList[$iY][$eServer], $iConnectPort, $iTimeoutMS)
 			Else
 				$iSocket = _TCPConnect(TCPNameToIP($avList[$iY][$eServer]), $iConnectPort, $iTimeoutMS)
 			EndIf
-			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & " using " & $sDesc & " protocol /Socket=" & $iSocket & " /Error=" & @error)
+			$oObj.Log("Connecting to " & $avList[$iY][$eServer] & ":" & $avList[$iY][$ePort] & ":" & $iConnectPort & " using " & $sDesc & " protocol /Socket=" & $iSocket & " /Error=" & @error)
 		EndIf
 
 		If $iSocket = -1 Or (IsArray($iSocket) And $iSocket[0] = 0) Then
