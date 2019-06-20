@@ -114,7 +114,7 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 
 
-Global $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2]
+Global $iPid, $iServerCount = 0, $iServerTray = ChrW(8734), $sUpdateLink, $avPopups[1][5], $asServerPlayers[1][3], $iListviewFlag = False, $iListviewIndex, $iSkipLabelProc = False, $asServerInfo[1][2], $iScanFinished = False
 
 ;Main GUI
 Global $hGui, $iGuiY, $aiGuiMin
@@ -234,9 +234,7 @@ Func _ServerCheck()
 	AdlibUnRegister("_ScanningCrashedReset")
 	AdlibUnRegister("_ServerCheck")
 	AdlibUnRegister("_HintAdd")
-	GUICtrlSetData($idScanNow, "Scanning under way")
 	GUICtrlSetState($idScanNow, $GUI_DISABLE)
-	AdlibRegister("_WorkingAnimation")
 	AdlibRegister("_HintRemove", 20)
 
 	If @Compiled Then
@@ -244,6 +242,8 @@ Func _ServerCheck()
 	Else
 		$iPid = Run(@AutoItExe & ' "' & @ScriptFullPath & '" /ServerScanner ' & @AutoItPID)
 	EndIf
+	_WorkingAnimation()
+	AdlibRegister("_WorkingAnimation")
 EndFunc
 
 Func _WorkingAnimation()
@@ -252,8 +252,11 @@ Func _WorkingAnimation()
 		$sCurrent = StringLeft($sAnimation, 1)
 		GUICtrlSetData($idScanNow, "Scanning under way " & $sCurrent)
 		$sAnimation = StringTrimLeft($sAnimation, 1) & $sCurrent
+	ElseIf $iScanFinished = True Then
+		$iScanFinished = False
+		_ServerFinishedEx()
 	Else
-		_ServerFinished("boobs")
+		_ServerFinishedEx()
 		GUICtrlSetData($idScanNow, "! Scanning crashed !")
 		AdlibRegister("_ScanningCrashedReset", 3750)
 	EndIf
@@ -291,16 +294,33 @@ Func _ServerScanner()
 
 		Local $iConnectPort = $avList[$iY][$ePort]
 
+		If $avList[$iY][$eProtocol] = $eProtocolAuto Then
+			If $avList[$iY][$eProtocolCurrent] = "" Then
+				$avList[$iY][$eProtocolCurrent] = $eProtocol3
+			Else
+				$avList[$iY][$eProtocolCurrent] -= 1
+				If $avList[$iY][$eProtocolCurrent] <= $eProtocolAuto Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
+			EndIf
+
+			$oList.SetProtocolCurrent($avList[$iY][$eServer], $avList[$iY][$ePort], $avList[$iY][$eProtocolCurrent])
+		EndIf
+
 		If $iConnectPort = "" Then
 			If IsArray($avList[$iY][$eSRVData]) Then
 				$avTemp = $avList[$iY][$eSRVData]
 				$iConnectPort = $avTemp[0][2]
 			Else
-				$avSRV = SRVRecords("_minecraft._tcp." & $avList[$iY][$eServer])
+				Local $avSRV
 
-				For $iX = 0 To UBound($avSRV) - 1
-					$oObj.Log("SRV Priority:" & $avSRV[$iX][0] & " Weight:" & $avSRV[$iX][1] & " Port:" & $avSRV[$iX][2] & " Target:" & $avSRV[$iX][3])
-				Next
+				;No SRV records on Bedrock
+				If $avList[$iY][$eProtocol] <> $eProtocolBedrock And $avList[$iY][$eProtocolCurrent] <> $eProtocolBedrock Then
+					$oObj.Log("Trying to get SRV records for _minecraft._tcp." & $avList[$iY][$eServer])
+					$avSRV = SRVRecords("_minecraft._tcp." & $avList[$iY][$eServer])
+
+					For $iX = 0 To UBound($avSRV) - 1
+						$oObj.Log("SRV Priority:" & $avSRV[$iX][0] & " Weight:" & $avSRV[$iX][1] & " Port:" & $avSRV[$iX][2] & " Target:" & $avSRV[$iX][3])
+					Next
+				EndIf
 
 				If IsArray($avSRV) Then
 					$oList.SetSRVData($avList[$iY][$eServer], $iConnectPort, $avSRV)
@@ -313,17 +333,6 @@ Func _ServerScanner()
 					EndIf
 				EndIf
 			EndIf
-		EndIf
-
-		If $avList[$iY][$eProtocol] = $eProtocolAuto Then
-			If $avList[$iY][$eProtocolCurrent] = "" Then
-				$avList[$iY][$eProtocolCurrent] = $eProtocol3
-			Else
-				$avList[$iY][$eProtocolCurrent] -= 1
-				If $avList[$iY][$eProtocolCurrent] <= $eProtocolAuto Then $avList[$iY][$eProtocolCurrent] = $eProtocolMax -1
-			EndIf
-
-			$oList.SetProtocolCurrent($avList[$iY][$eServer], $avList[$iY][$ePort], $avList[$iY][$eProtocolCurrent])
 		EndIf
 
 		Local $sDesc = _asProtocolDesc($avList[$iY][$eProtocol], $avList[$iY][$eProtocolCurrent])
@@ -711,6 +720,10 @@ Func _ServerResults($oSelf, $sServerAddress, $iServerPort, $sVersion, $sMOTD, $i
 EndFunc
 
 Func _ServerFinished($oSelf)
+	$iScanFinished = True
+EndFunc
+
+Func _ServerFinishedEx()
 	AdlibUnRegister("_WorkingAnimation")
 	$iServerTray = $iServerCount
 	$iServerCount = 0
