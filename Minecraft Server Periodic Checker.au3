@@ -123,7 +123,7 @@ Global $hSettingsGui
 ;Naughty cat GUI
 Global $hNaughtyCatGui
 ;Controls
-Global $idIP, $idAdd, $idScanNow
+Global $idIP, $idPort, $idAdd, $idScanNow
 Global $idServers, $idServerDelete, $idServerShowPopup, $idServerMenuAuto, $idServerMenuOld, $idServerMenuTrue, $idServerMenuNew, $idServerMenuBedrock
 Global $cIdHints, $cIdSettings, $idPopupDummy
 Global $idServerImage, $idServerProtocol, $idServerPlayers, $idDeleteAvatars
@@ -893,9 +893,12 @@ Func _GUICreate()
 
 
 	GUICtrlCreateGroup("Add server", 5, 5, 375, 70)
-	$idIP = GUICtrlCreateInput("", 20, 30, 290, 25)
-	GUICtrlSendMsg($idIP, $EM_SETCUEBANNER, True, "Server address")
-	GUICtrlSetTip(-1, "Accepts all formats Minecraft understands")
+	$idIP = GUICtrlCreateInput("", 20, 30, 205, 25)
+	GUICtrlSendMsg(-1, $EM_SETCUEBANNER, True, "Server IP or Address")
+	GUICtrlSetTip(-1, "IP or Address")
+	$idPort = GUICtrlCreateInput("", 235, 30, 75, 25)
+	GUICtrlSendMsg(-1, $EM_SETCUEBANNER, True, "Port (optional)")
+	GUICtrlSetTip(-1, "Port (optional)")
 	$idAdd = GUICtrlCreateButton("Add", 320, 30, 50, 25)
 
 	GUICtrlCreateGroup("Scan", 390, 5, 215, 70)
@@ -956,7 +959,7 @@ Func _GUICreate()
 	$idPopupDummy = GUICtrlCreateDummy()
 
 
-	GUICtrlCreateGroup("1.7+ only", 615, 5, 207, $iGuiY - 15)
+	GUICtrlCreateGroup("Java 1.7+ only", 615, 5, 207, $iGuiY - 15)
 
 	$idServerImage = GUICtrlCreatePic("", 625, 25, 64, 64)
 	If @Compiled Then
@@ -1095,6 +1098,11 @@ Func _GUIMainLoop()
 				ElseIf UBound($asAddress) = 1 Then
 					ReDim $asAddress[2]
 					$asAddress[1] = ""
+				EndIf
+
+				Local $sPort = GUICtrlRead($idPort)
+				If $sPort <> "" Then
+					$asAddress[1] = $sPort
 				EndIf
 
 				Local $iIndex = -1
