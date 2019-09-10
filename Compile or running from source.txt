@@ -3,7 +3,7 @@ Compile or running from source
 ------------------------------
 
 1. Install AutoIt v3 from http://autoitscript.com/
-Optionally  install SciTE4AutoIt3 from same website for more options when running/compiling
+Optionally install SciTE4AutoIt3 from same website for more options when running/compiling
 
 2. Open "Minecraft Server Periodic Checker.au3" in SciTE and either:
 *Tools > Compile
